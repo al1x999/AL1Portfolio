@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   Play,
+  User,
 } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
 import type { AccentColor } from '../types/portfolio';
@@ -148,6 +149,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
               <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
               <span>Reviews</span>
             </button>
+
+            <button
+              onClick={() => scrollToSection('about')}
+              className="px-3 py-1.5 rounded-full text-xs font-semibold text-neutral-300 hover:text-white transition-colors hover:bg-white/10 flex items-center gap-1.5"
+            >
+              <User className="w-3.5 h-3.5 text-cyan-400" />
+              <span>About</span>
+            </button>
           </nav>
 
           {/* Right Controls: Direct Portfolio Button, Admin & Themes */}
@@ -278,6 +287,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
             >
               <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
               <span>Reviews</span>
+            </button>
+            <button
+              onClick={() => scrollToSection('about')}
+              className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-neutral-200 hover:bg-white/10 flex items-center gap-2"
+            >
+              <User className="w-3.5 h-3.5 text-cyan-400" />
+              <span>About & Social Links</span>
             </button>
             {isAdmin && (
               <button

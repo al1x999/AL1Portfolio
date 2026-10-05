@@ -7,6 +7,7 @@ import { HeaderHero } from './components/HeaderHero';
 import { VideoShowcase } from './components/VideoShowcase';
 import { TermsPolicySection } from './components/TermsPolicySection';
 import { ReviewSection } from './components/ReviewSection';
+import { AboutSection } from './components/AboutSection';
 import { Footer } from './components/Footer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { VideoModal } from './components/VideoModal';
@@ -64,6 +65,9 @@ const PortfolioContent: React.FC = () => {
 
         {/* 4. Dynamic Client Review & Testimonial Section */}
         <ReviewSection onOpenAdmin={() => setIsAdminOpen(true)} />
+
+        {/* 5. About AL1 Studio & Official Social Channels Hub (At the bottom) */}
+        <AboutSection onOpenAdmin={() => setIsAdminOpen(true)} />
       </main>
 
       {/* Studio Footer */}

@@ -475,7 +475,7 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
                 <iframe
                   src={`https://www.youtube-nocookie.com/embed/${extractYouTubeId(
                     videoModalUrl
-                  )}?autoplay=1&rel=0`}
+                  )}?autoplay=1&rel=0&vq=hd1080`}
                   title="Policy Reference Video"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen

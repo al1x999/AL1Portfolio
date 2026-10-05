@@ -1,5 +1,5 @@
 import React from 'react';
-import { Film, Star, Shield, FileText } from 'lucide-react';
+import { Film, Star, Shield, FileText, User } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
 
 interface MobileBottomNavProps {
@@ -47,6 +47,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenAdmin })
         >
           <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
           <span className="text-[10px] font-medium">Reviews</span>
+        </button>
+
+        <button
+          onClick={() => scrollTo('about')}
+          className="flex flex-col items-center gap-1 text-neutral-400 hover:text-white p-1 focus:outline-none"
+        >
+          <User className="w-4 h-4 text-cyan-400" />
+          <span className="text-[10px] font-medium">About</span>
         </button>
 
         {/* Admin Button - ONLY visible if logged in */}
