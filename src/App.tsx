@@ -63,7 +63,7 @@ const PortfolioContent: React.FC = () => {
         <TermsPolicySection onOpenAdmin={() => setIsAdminOpen(true)} />
 
         {/* 4. Dynamic Client Review & Testimonial Section */}
-        <ReviewSection />
+        <ReviewSection onOpenAdmin={() => setIsAdminOpen(true)} />
       </main>
 
       {/* Studio Footer */}

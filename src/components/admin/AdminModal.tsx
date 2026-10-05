@@ -31,6 +31,7 @@ import {
   MessageCircle,
   BookOpen,
   Info,
+  ShieldCheck,
 } from 'lucide-react';
 import { usePortfolio } from '../../context/PortfolioContext';
 import type {
@@ -321,6 +322,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     text: string;
     projectReference: string;
     clientPhoto: string;
+    platformBadge: string;
+    accentColor: string;
+    isVerified: boolean;
+    date: string;
   }>({
     clientName: '',
     clientRole: '',
@@ -328,6 +333,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     text: '',
     projectReference: '',
     clientPhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+    platformBadge: 'YouTube Creator',
+    accentColor: '#06b6d4',
+    isVerified: true,
+    date: 'Recent',
   });
 
   // Skill form state
@@ -617,13 +626,23 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (!reviewForm.clientName.trim() || !reviewForm.text.trim()) return;
 
+    const finalReview = {
+      clientName: reviewForm.clientName.trim(),
+      clientRole: reviewForm.clientRole.trim() || 'Verified Client',
+      rating: reviewForm.rating,
+      text: reviewForm.text.trim(),
+      projectReference: reviewForm.projectReference.trim() || 'Custom Edit',
+      clientPhoto: reviewForm.clientPhoto.trim() || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+      platformBadge: reviewForm.platformBadge.trim() || 'Verified Client',
+      accentColor: reviewForm.accentColor || '#06b6d4',
+      isVerified: reviewForm.isVerified,
+      date: reviewForm.date.trim() || 'Recent',
+    };
+
     if (editingReviewId) {
-      updateReview(editingReviewId, reviewForm);
+      updateReview(editingReviewId, finalReview);
     } else {
-      addReview({
-        ...reviewForm,
-        date: 'Recent',
-      });
+      addReview(finalReview);
     }
 
     setShowReviewForm(false);
@@ -635,6 +654,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
       text: '',
       projectReference: '',
       clientPhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+      platformBadge: 'YouTube Creator',
+      accentColor: '#06b6d4',
+      isVerified: true,
+      date: 'Recent',
     });
   };
 
@@ -646,6 +669,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
       text: r.text,
       projectReference: r.projectReference,
       clientPhoto: r.clientPhoto,
+      platformBadge: r.platformBadge || 'YouTube Creator',
+      accentColor: r.accentColor || '#06b6d4',
+      isVerified: r.isVerified !== false,
+      date: r.date || 'Recent',
     });
     setEditingReviewId(r.id);
     setShowReviewForm(true);
@@ -2258,14 +2285,18 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                           text: '',
                           projectReference: '',
                           clientPhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+                          platformBadge: 'YouTube Creator',
+                          accentColor: '#06b6d4',
+                          isVerified: true,
+                          date: 'Recent',
                         });
                         setShowReviewForm(!showReviewForm);
                       }}
-                      className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-black flex items-center gap-1.5 shadow-md shrink-0"
+                      className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-black flex items-center gap-1.5 shadow-md shrink-0 hover:scale-105 active:scale-95 transition-all"
                       style={{ backgroundColor: 'var(--accent)' }}
                     >
                       <Plus className="w-4 h-4" />
-                      <span>{showReviewForm ? 'Cancel' : 'Add Review'}</span>
+                      <span>{showReviewForm ? 'Cancel' : 'Add Custom Review'}</span>
                     </button>
                   </div>
 
@@ -2273,147 +2304,301 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                   {showReviewForm && (
                     <form
                       onSubmit={handleSaveReview}
-                      className="p-5 rounded-2xl glass-card border border-white/15 space-y-4"
+                      className="p-5 sm:p-6 rounded-2xl glass-card border border-white/20 bg-neutral-900/90 space-y-5 shadow-2xl"
                     >
-                      <h4 className="font-heading font-bold text-sm text-white">
-                        {editingReviewId ? 'Edit Client Review' : 'Add Client Review'}
-                      </h4>
+                      <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                        <h4 className="font-heading font-bold text-sm sm:text-base text-white flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <span>{editingReviewId ? 'Edit Custom Client Review' : 'Create Custom Client Review'}</span>
+                        </h4>
+                        <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-neutral-300">
+                          Admin Exclusive
+                        </span>
+                      </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        {/* Client Name & Verified Checkbox */}
                         <div>
-                          <label className="block text-neutral-300 font-semibold mb-1">Client Name *</label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-neutral-300 font-semibold">Client / Channel Name *</label>
+                            <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-cyan-400 hover:text-cyan-300">
+                              <input
+                                type="checkbox"
+                                checked={reviewForm.isVerified}
+                                onChange={(e) => setReviewForm({ ...reviewForm, isVerified: e.target.checked })}
+                                className="rounded border-white/20 text-cyan-500 focus:ring-0"
+                              />
+                              <ShieldCheck className="w-3.5 h-3.5 fill-current" />
+                              <span>Verified Client</span>
+                            </label>
+                          </div>
                           <input
                             type="text"
                             required
                             value={reviewForm.clientName}
                             onChange={(e) => setReviewForm({ ...reviewForm, clientName: e.target.value })}
-                            placeholder="Elena Rostova"
-                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none"
+                            placeholder="e.g., Marcus Reynolds / TechVibe"
+                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                           />
                         </div>
 
+                        {/* Client Role / Channel Subtitle */}
                         <div>
-                          <label className="block text-neutral-300 font-semibold mb-1">Client Role / Channel</label>
+                          <label className="block text-neutral-300 font-semibold mb-1">Client Role / Subtitle</label>
                           <input
                             type="text"
                             value={reviewForm.clientRole}
                             onChange={(e) => setReviewForm({ ...reviewForm, clientRole: e.target.value })}
-                            placeholder="Vortex Esports (Head of Media)"
-                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none"
+                            placeholder="e.g., Apex Tech Reviews (2.8M Subs)"
+                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                           />
                         </div>
 
+                        {/* Platform / Category Badge */}
                         <div>
-                          <label className="block text-neutral-300 font-semibold mb-1">Star Rating (1 - 5)</label>
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                                className="p-1"
-                              >
-                                <Star
-                                  className={`w-5 h-5 ${
-                                    star <= reviewForm.rating
-                                      ? 'text-amber-400 fill-amber-400'
-                                      : 'text-neutral-600'
-                                  }`}
-                                />
-                              </button>
-                            ))}
+                          <label className="block text-neutral-300 font-semibold mb-1">Platform Badge</label>
+                          <input
+                            type="text"
+                            value={reviewForm.platformBadge}
+                            onChange={(e) => setReviewForm({ ...reviewForm, platformBadge: e.target.value })}
+                            placeholder="e.g., YouTube Creator, Esports Gaming, Commercial Brand"
+                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                          />
+                          <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            {['YouTube Creator', 'Esports Gaming', 'Commercial Brand', 'TikTok Viral', 'Agency Client'].map(
+                              (p) => (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  onClick={() => setReviewForm({ ...reviewForm, platformBadge: p })}
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-400 hover:text-white border border-white/5 transition-colors"
+                                >
+                                  {p}
+                                </button>
+                              )
+                            )}
                           </div>
                         </div>
 
+                        {/* Card Glow / Accent Color */}
                         <div>
-                          <label className="block text-neutral-300 font-semibold mb-1">Project Reference</label>
-                          <input
-                            type="text"
-                            value={reviewForm.projectReference}
-                            onChange={(e) => setReviewForm({ ...reviewForm, projectReference: e.target.value })}
-                            placeholder="e.g. VALORANT Champions Frag Movie"
-                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none"
-                          />
+                          <label className="block text-neutral-300 font-semibold mb-1">
+                            Card Accent Color (Glow & Border)
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
+                              {[
+                                { name: 'Cyan', hex: '#06b6d4' },
+                                { name: 'Emerald', hex: '#10b981' },
+                                { name: 'Purple', hex: '#a855f7' },
+                                { name: 'Amber', hex: '#f59e0b' },
+                                { name: 'Rose', hex: '#f43f5e' },
+                                { name: 'Blue', hex: '#3b82f6' },
+                              ].map((c) => (
+                                <button
+                                  key={c.hex}
+                                  type="button"
+                                  onClick={() => setReviewForm({ ...reviewForm, accentColor: c.hex })}
+                                  className={`w-6 h-6 rounded-full border transition-all ${
+                                    reviewForm.accentColor === c.hex
+                                      ? 'border-white scale-125 shadow-md'
+                                      : 'border-transparent opacity-60 hover:opacity-100'
+                                  }`}
+                                  style={{ backgroundColor: c.hex }}
+                                  title={c.name}
+                                />
+                              ))}
+                            </div>
+                            <input
+                              type="color"
+                              value={reviewForm.accentColor}
+                              onChange={(e) => setReviewForm({ ...reviewForm, accentColor: e.target.value })}
+                              className="w-7 h-7 rounded-lg cursor-pointer bg-transparent border-0 ml-1"
+                              title="Pick Custom Color"
+                            />
+                            <input
+                              type="text"
+                              value={reviewForm.accentColor}
+                              onChange={(e) => setReviewForm({ ...reviewForm, accentColor: e.target.value })}
+                              className="w-20 px-2 py-1 rounded-lg glass-panel border border-white/10 text-white font-mono text-[11px]"
+                            />
+                          </div>
                         </div>
 
+                        {/* Star Rating */}
+                        <div>
+                          <label className="block text-neutral-300 font-semibold mb-1">Star Rating (1 - 5)</label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 p-1 rounded-xl bg-black/40 border border-white/10">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  type="button"
+                                  onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                                  className="p-1 hover:scale-125 transition-transform"
+                                >
+                                  <Star
+                                    className={`w-5 h-5 ${
+                                      star <= reviewForm.rating
+                                        ? 'text-amber-400 fill-amber-400'
+                                        : 'text-neutral-700'
+                                    }`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                            <span className="text-xs font-bold text-amber-400 font-mono">
+                              {reviewForm.rating} / 5 Stars
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Project Reference & Date */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-neutral-300 font-semibold mb-1">Project Reference</label>
+                            <input
+                              type="text"
+                              value={reviewForm.projectReference}
+                              onChange={(e) => setReviewForm({ ...reviewForm, projectReference: e.target.value })}
+                              placeholder="e.g. YouTube Long-Form"
+                              className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-neutral-300 font-semibold mb-1">Date / Period</label>
+                            <input
+                              type="text"
+                              value={reviewForm.date}
+                              onChange={(e) => setReviewForm({ ...reviewForm, date: e.target.value })}
+                              placeholder="e.g. February 2026"
+                              className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Client Photo Profile & Presets */}
                         <div className="sm:col-span-2">
-                          <label className="block text-neutral-300 font-semibold mb-1">Client Photo</label>
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/15 shrink-0 bg-neutral-900">
+                          <label className="block text-neutral-300 font-semibold mb-1">
+                            Client Profile Photo / Avatar
+                          </label>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div
+                              className="w-14 h-14 rounded-2xl overflow-hidden border-2 p-0.5 shrink-0 bg-neutral-900 shadow-md"
+                              style={{ borderColor: reviewForm.accentColor }}
+                            >
                               <img
                                 src={reviewForm.clientPhoto}
                                 alt="Client Avatar Preview"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover rounded-xl"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80';
+                                }}
                               />
                             </div>
-                            <input
-                              type="text"
-                              value={reviewForm.clientPhoto}
-                              onChange={(e) => setReviewForm({ ...reviewForm, clientPhoto: e.target.value })}
-                              placeholder="Image URL https://..."
-                              className="flex-1 px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none text-xs"
-                            />
-                            <label className="px-3 py-2 rounded-xl glass-panel border border-white/10 hover:border-white/25 text-neutral-300 hover:text-white cursor-pointer flex items-center gap-1.5 shrink-0">
-                              <Camera className="w-3.5 h-3.5" />
-                              <span>Upload</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handlePhotoUpload}
-                                className="hidden"
-                              />
-                            </label>
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={reviewForm.clientPhoto}
+                                  onChange={(e) => setReviewForm({ ...reviewForm, clientPhoto: e.target.value })}
+                                  placeholder="Image URL https://..."
+                                  className="flex-1 px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none text-xs"
+                                />
+                                <label className="px-3.5 py-2 rounded-xl glass-panel border border-white/15 hover:border-white/30 text-neutral-200 hover:text-white cursor-pointer flex items-center gap-1.5 shrink-0 transition-all">
+                                  <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                                  <span className="font-semibold">Upload Photo</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handlePhotoUpload}
+                                    className="hidden"
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Quick 1-Click Avatar Presets */}
+                              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                                <span className="text-[10px] text-neutral-400 shrink-0">Quick Presets:</span>
+                                {[
+                                  { label: 'Creator (M)', url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80' },
+                                  { label: 'Creator (F)', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80' },
+                                  { label: 'Executive', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80' },
+                                  { label: 'Brand Dir', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80' },
+                                  { label: 'Gaming Lead', url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80' },
+                                ].map((p) => (
+                                  <button
+                                    key={p.label}
+                                    type="button"
+                                    onClick={() => setReviewForm({ ...reviewForm, clientPhoto: p.url })}
+                                    className="text-[10px] font-mono px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/5 whitespace-nowrap transition-colors"
+                                  >
+                                    {p.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         </div>
 
+                        {/* Review Testimonial Text */}
                         <div className="sm:col-span-2">
-                          <label className="block text-neutral-300 font-semibold mb-1">Review Testimonial Text *</label>
+                          <label className="block text-neutral-300 font-semibold mb-1">
+                            Review Testimonial Text *
+                          </label>
                           <textarea
                             rows={3}
                             required
                             value={reviewForm.text}
                             onChange={(e) => setReviewForm({ ...reviewForm, text: e.target.value })}
-                            placeholder="AL1 Studio transformed our YouTube channel pacing..."
-                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none text-xs resize-none"
+                            placeholder="Write the custom client review here... (e.g., 'AL1 Studio delivered flawless retention pacing and sound design...')"
+                            className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white focus:outline-none focus:border-cyan-400 text-xs resize-none leading-relaxed"
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                      {/* Form Actions */}
+                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
                         <button
                           type="button"
                           onClick={() => {
                             setShowReviewForm(false);
                             setEditingReviewId(null);
                           }}
-                          className="px-4 py-2 rounded-xl glass-panel border border-white/10 text-xs text-neutral-400"
+                          className="px-4 py-2 rounded-xl glass-panel border border-white/10 text-xs text-neutral-400 hover:text-white"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-5 py-2 rounded-xl text-black font-bold text-xs uppercase tracking-wider"
+                          className="px-5 py-2.5 rounded-xl text-black font-bold text-xs uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all"
                           style={{ backgroundColor: 'var(--accent)' }}
                         >
-                          {editingReviewId ? 'Update Review' : 'Save Review'}
+                          {editingReviewId ? 'Update Review' : 'Save Custom Review'}
                         </button>
                       </div>
                     </form>
                   )}
 
-                  {/* Reviews List with Safe Delete */}
+                  {/* Reviews List with Safe Delete & Full Preview */}
                   <div className="space-y-3">
                     {reviews.map((rev, idx) => (
                       <div
                         key={rev.id}
-                        className="p-3.5 rounded-2xl glass-card border border-white/10 flex items-start justify-between gap-3"
+                        className="p-4 rounded-2xl glass-card border border-white/10 flex flex-col sm:flex-row sm:items-start justify-between gap-4 hover:border-white/20 transition-all"
+                        style={{
+                          borderLeft: `4px solid ${rev.accentColor || '#06b6d4'}`,
+                        }}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-3.5">
+                          {/* Reorder Arrows */}
                           <div className="flex flex-col gap-1 mt-1">
                             <button
                               onClick={() => handleMoveReview(idx, 'up')}
                               disabled={idx === 0}
                               className="p-1 rounded bg-white/5 hover:bg-white/10 text-neutral-400 disabled:opacity-20"
+                              title="Move Up"
                             >
                               <ArrowUp className="w-3 h-3" />
                             </button>
@@ -2421,33 +2606,65 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                               onClick={() => handleMoveReview(idx, 'down')}
                               disabled={idx === reviews.length - 1}
                               className="p-1 rounded bg-white/5 hover:bg-white/10 text-neutral-400 disabled:opacity-20"
+                              title="Move Down"
                             >
                               <ArrowDown className="w-3 h-3" />
                             </button>
                           </div>
 
-                          <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/15 shrink-0 bg-neutral-900">
-                            <img src={rev.clientPhoto} alt={rev.clientName} className="w-full h-full object-cover" />
+                          {/* Avatar with Glow Border */}
+                          <div
+                            className="w-12 h-12 rounded-xl overflow-hidden border-2 p-0.5 shrink-0 bg-neutral-900 shadow-md"
+                            style={{ borderColor: rev.accentColor || '#06b6d4' }}
+                          >
+                            <img src={rev.clientPhoto} alt={rev.clientName} className="w-full h-full object-cover rounded-lg" />
                           </div>
 
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-heading font-bold text-sm text-white">{rev.clientName}</h4>
-                              <div className="flex">
+                          {/* Info */}
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h4 className="font-heading font-bold text-sm text-white flex items-center gap-1.5">
+                                <span>{rev.clientName}</span>
+                                {rev.isVerified !== false && (
+                                  <span title="Verified Client">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400/20" />
+                                  </span>
+                                )}
+                              </h4>
+
+                              {rev.platformBadge && (
+                                <span
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded-full border font-semibold"
+                                  style={{
+                                    backgroundColor: `${rev.accentColor || '#06b6d4'}15`,
+                                    borderColor: `${rev.accentColor || '#06b6d4'}40`,
+                                    color: rev.accentColor || '#06b6d4',
+                                  }}
+                                >
+                                  {rev.platformBadge}
+                                </span>
+                              )}
+
+                              <div className="flex items-center gap-0.5">
                                 {[...Array(rev.rating)].map((_, i) => (
                                   <Star key={i} className="w-3 h-3 text-amber-400 fill-amber-400" />
                                 ))}
                               </div>
                             </div>
-                            <p className="text-xs text-neutral-400">{rev.clientRole} • <span className="text-cyan-400">{rev.projectReference}</span></p>
+
+                            <p className="text-xs text-neutral-400 mt-0.5">
+                              {rev.clientRole} • <span className="text-white font-medium">{rev.projectReference}</span>
+                              {rev.date && <span className="text-neutral-500 font-mono ml-2">({rev.date})</span>}
+                            </p>
                             <p className="text-xs text-neutral-300 mt-1 italic line-clamp-2">"{rev.text}"</p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
                           <button
                             onClick={() => handleEditReview(rev)}
-                            className="p-2 rounded-xl glass-panel border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white text-xs"
+                            className="p-2 rounded-xl glass-panel border border-white/10 hover:border-white/20 text-neutral-300 hover:text-white text-xs transition-all"
                             title="Edit Review"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -2460,7 +2677,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                                   deleteReview(rev.id);
                                   setDeleteConfirmReviewId(null);
                                 }}
-                                className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-xs"
+                                className="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold text-xs animate-pulse"
                               >
                                 Delete?
                               </button>
@@ -2474,7 +2691,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                           ) : (
                             <button
                               onClick={() => setDeleteConfirmReviewId(rev.id)}
-                              className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 text-xs"
+                              className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 text-xs transition-all"
                               title="Delete Review"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

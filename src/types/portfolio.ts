@@ -79,6 +79,9 @@ export interface ClientReview {
   text: string;
   projectReference: string;
   date?: string;
+  platformBadge?: string;
+  accentColor?: string;
+  isVerified?: boolean;
   order: number;
 }
 

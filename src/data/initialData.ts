@@ -245,6 +245,9 @@ export const INITIAL_REVIEWS: ClientReview[] = [
     text: 'AL1 Studio transformed our YouTube channel pacing. Average view duration jumped from 35% to 58%, and the micro-zooms and sound effects are perfection. Indispensable post-production partner!',
     projectReference: 'YouTube Long-Form Series',
     date: 'February 2026',
+    platformBadge: 'YouTube Creator',
+    accentColor: '#06b6d4',
+    isVerified: true,
     order: 1,
   },
   {
@@ -256,6 +259,9 @@ export const INITIAL_REVIEWS: ClientReview[] = [
     text: 'The tournament frag movie delivered over 5.8 Million views in 48 hours. Frame-accurate beat sync and 3D camera velocity ramp made it our highest performing video of the year.',
     projectReference: 'VALORANT Champions Frag Movie',
     date: 'January 2026',
+    platformBadge: 'Esports Gaming',
+    accentColor: '#a855f7',
+    isVerified: true,
     order: 2,
   },
   {
@@ -267,6 +273,9 @@ export const INITIAL_REVIEWS: ClientReview[] = [
     text: 'Immaculate color science and fast turnarounds on impossible deadlines. AL1 Studio elevated our product commercial into a theatrical masterpiece that generated a 3.4x ad CTR.',
     projectReference: 'Cyberpunk Commercial Reel',
     date: 'December 2025',
+    platformBadge: 'Commercial Brand',
+    accentColor: '#f59e0b',
+    isVerified: true,
     order: 3,
   },
 ];
