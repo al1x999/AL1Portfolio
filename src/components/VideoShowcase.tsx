@@ -16,7 +16,7 @@ interface VideoShowcaseProps {
 }
 
 export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => {
-  const { videos, categories, openVideoModal } = usePortfolio();
+  const { videos, categories, openVideoModal, isAdmin } = usePortfolio();
   const [activeFilter, setActiveFilter] = useState<'all' | 'landscape' | 'reels' | string>('all');
 
   // Separate videos by aspect ratio
@@ -67,9 +67,9 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
           </p>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          {onOpenAdmin && (
+        {/* Action Controls - ONLY shown for Admin */}
+        {isAdmin && onOpenAdmin && (
+          <div className="flex items-center gap-2">
             <button
               onClick={onOpenAdmin}
               className="px-3.5 py-2 rounded-xl text-black font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 transition-all shrink-0 cursor-pointer"
@@ -79,8 +79,8 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
               <Plus className="w-4 h-4" />
               <span>Add / Manage</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Category Filter Pills */}

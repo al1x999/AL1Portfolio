@@ -1,5 +1,5 @@
 import React from 'react';
-import { Film, Share2, Star, Shield, FileText } from 'lucide-react';
+import { Film, Star, Shield, FileText } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
 
 interface MobileBottomNavProps {
@@ -38,15 +38,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenAdmin })
           className="flex flex-col items-center gap-1 text-neutral-400 hover:text-white p-1 focus:outline-none"
         >
           <FileText className="w-4 h-4 text-amber-400" />
-          <span className="text-[10px] font-medium">নীতিমালা</span>
-        </button>
-
-        <button
-          onClick={() => scrollTo('link-hub')}
-          className="flex flex-col items-center gap-1 text-neutral-400 hover:text-white p-1 focus:outline-none"
-        >
-          <Share2 className="w-4 h-4 text-neutral-300" />
-          <span className="text-[10px] font-medium">Links</span>
+          <span className="text-[10px] font-medium">Terms</span>
         </button>
 
         <button
@@ -57,16 +49,17 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenAdmin })
           <span className="text-[10px] font-medium">Reviews</span>
         </button>
 
-        <button
-          onClick={onOpenAdmin}
-          className="flex flex-col items-center gap-1 text-neutral-400 hover:text-white p-1 focus:outline-none relative"
-        >
-          <Shield className="w-5 h-5" style={{ color: isAdmin ? '#10b981' : 'var(--text-secondary)' }} />
-          <span className="text-[10px] font-medium">Admin</span>
-          {isAdmin && (
+        {/* Admin Button - ONLY visible if logged in */}
+        {isAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="flex flex-col items-center gap-1 text-emerald-400 p-1 focus:outline-none relative"
+          >
+            <Shield className="w-4 h-4 text-emerald-400" />
+            <span className="text-[10px] font-semibold">Admin</span>
             <span className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-          )}
-        </button>
+          </button>
+        )}
       </div>
     </div>
   );

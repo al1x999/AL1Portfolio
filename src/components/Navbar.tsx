@@ -24,6 +24,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
   const [scrolled, setScrolled] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const logoClickRef = React.useRef<{ count: number; timer: ReturnType<typeof setTimeout> | null }>({
+    count: 0,
+    timer: null,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,6 +36,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    scrollToSection('home');
+    logoClickRef.current.count += 1;
+    if (logoClickRef.current.timer) clearTimeout(logoClickRef.current.timer);
+    if (logoClickRef.current.count >= 3) {
+      onOpenAdmin();
+      logoClickRef.current.count = 0;
+      return;
+    }
+    logoClickRef.current.timer = setTimeout(() => {
+      logoClickRef.current.count = 0;
+    }, 1500);
+  };
 
   const accentOptions: { name: string; value: AccentColor; hex: string }[] = [
     { name: 'Neon Cyan', value: 'cyan', hex: '#06b6d4' },
@@ -74,10 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
           <a
             href="#"
             className="flex items-center gap-2.5 group focus:outline-none"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollToSection('home');
-            }}
+            onClick={handleLogoClick}
           >
             <div
               className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-black border shadow-md transition-transform group-hover:scale-105"
@@ -209,19 +225,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
               )}
             </button>
 
-            {/* Admin Button */}
-            <button
-              onClick={onOpenAdmin}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-                isAdmin
-                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
-                  : 'border-white/10 glass-panel text-neutral-300 hover:border-white/25 hover:text-white'
-              }`}
-              title="Open Admin Dashboard"
-            >
-              <Shield className="w-3 h-3" style={{ color: isAdmin ? '#10b981' : 'var(--accent)' }} />
-              <span className="hidden sm:inline">Admin</span>
-            </button>
+            {/* Admin Button - ONLY visible when logged in */}
+            {isAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-500/10 text-emerald-300 text-xs font-semibold transition-all hover:bg-emerald-500/20 shadow-md"
+                title="Admin Dashboard (Active)"
+              >
+                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Admin Mode</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              </button>
+            )}
 
             {/* Mobile Hamburger Toggle */}
             <button
@@ -264,6 +279,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
               <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
               <span>Reviews</span>
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenAdmin();
+                }}
+                className="w-full text-left px-3 py-2 rounded-xl text-xs font-semibold text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2"
+              >
+                <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Admin Dashboard (Active)</span>
+              </button>
+            )}
           </div>
         )}
       </div>
