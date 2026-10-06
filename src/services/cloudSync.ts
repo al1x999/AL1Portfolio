@@ -36,7 +36,7 @@ export interface CloudSyncConfig {
 
 export const DEFAULT_CLOUD_CONFIG: CloudSyncConfig = {
   provider: 'firebase',
-  firebaseUrl: '',
+  firebaseUrl: 'https://portfolioal1-default-rtdb.firebaseio.com',
   customRestUrl: '',
   customApiKey: '',
   githubToken: '',
@@ -51,7 +51,12 @@ export function loadCloudConfig(): CloudSyncConfig {
   try {
     const saved = localStorage.getItem(CLOUD_CONFIG_STORAGE_KEY);
     if (saved) {
-      return { ...DEFAULT_CLOUD_CONFIG, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved);
+      return {
+        ...DEFAULT_CLOUD_CONFIG,
+        ...parsed,
+        firebaseUrl: parsed.firebaseUrl?.trim() || DEFAULT_CLOUD_CONFIG.firebaseUrl,
+      };
     }
   } catch (e) {
     console.error('Failed to load cloud config', e);
