@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type {
   BrandInfo,
   SoftwareSkill,
@@ -20,6 +20,14 @@ import {
   INITIAL_POLICY_RULES,
   INITIAL_POLICY_NOTICE,
 } from '../data/initialData';
+import {
+  type FullPortfolioData,
+  type CloudSyncConfig,
+  loadCloudConfig,
+  saveCloudConfig,
+  fetchFromCloud,
+  saveToCloud,
+} from '../services/cloudSync';
 
 interface PortfolioContextType {
   // Brand
@@ -92,6 +100,14 @@ interface PortfolioContextType {
   exportPortfolioData: () => void;
   importPortfolioData: (jsonData: string) => boolean;
   resetToDefaultData: () => void;
+
+  // Cloud Database & Multi-Browser Sync
+  cloudConfig: CloudSyncConfig;
+  updateCloudConfig: (updates: Partial<CloudSyncConfig>) => void;
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  syncMessage: string | null;
+  syncToCloudNow: () => Promise<{ success: boolean; message: string }>;
+  fetchFromCloudNow: () => Promise<boolean>;
 }
 
 const STORAGE_KEYS = {
@@ -213,6 +229,14 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Active Lightbox Modal
   const [activeVideo, setActiveVideo] = useState<VideoProject | null>(null);
+
+  // Cloud Database & Multi-Browser Sync state
+  const [cloudConfig, setCloudConfig] = useState<CloudSyncConfig>(() => loadCloudConfig());
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const hasHydratedRef = useRef(false);
+  const syncTimerRef = useRef<any>(null);
 
   // Apply Theme to Document root
   useEffect(() => {
@@ -615,9 +639,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     URL.revokeObjectURL(url);
   };
 
-  const importPortfolioData = (jsonData: string): boolean => {
+  const applyAllData = (parsed: Partial<FullPortfolioData>) => {
     try {
-      const parsed = JSON.parse(jsonData);
       if (parsed.brand) {
         setBrand(parsed.brand);
         localStorage.setItem(STORAGE_KEYS.BRAND, JSON.stringify(parsed.brand));
@@ -654,6 +677,15 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setTheme(parsed.theme);
         localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(parsed.theme));
       }
+    } catch (e) {
+      console.error('Failed to apply data:', e);
+    }
+  };
+
+  const importPortfolioData = (jsonData: string): boolean => {
+    try {
+      const parsed = JSON.parse(jsonData);
+      applyAllData(parsed);
       return true;
     } catch (e) {
       console.error('Import failed', e);
@@ -681,6 +713,140 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem(STORAGE_KEYS.POLICY_NOTICE);
     localStorage.removeItem(STORAGE_KEYS.THEME);
   };
+
+  // Update Cloud Sync Config
+  const updateCloudConfig = (updates: Partial<CloudSyncConfig>) => {
+    setCloudConfig((prev) => {
+      const next = { ...prev, ...updates };
+      saveCloudConfig(next);
+      return next;
+    });
+  };
+
+  // Sync current state to Cloud DB
+  const syncToCloudNow = async (): Promise<{ success: boolean; message: string }> => {
+    setSyncStatus('syncing');
+    setSyncMessage('Saving portfolio data to cloud database...');
+    const payload: FullPortfolioData = {
+      brand,
+      skills,
+      videos,
+      categories,
+      links,
+      reviews,
+      policyRules,
+      policyNotice,
+      theme,
+    };
+    const res = await saveToCloud(cloudConfig, payload);
+    if (res.success) {
+      setSyncStatus('synced');
+      setSyncMessage(res.message);
+      updateCloudConfig({ lastSyncedAt: new Date().toISOString() });
+    } else {
+      setSyncStatus('error');
+      setSyncMessage(res.message);
+    }
+    return res;
+  };
+
+  // Fetch latest updates from Cloud DB
+  const fetchFromCloudNow = async (): Promise<boolean> => {
+    setSyncStatus('syncing');
+    setSyncMessage('Fetching latest updates from cloud...');
+    const data = await fetchFromCloud(cloudConfig);
+    if (data) {
+      applyAllData(data);
+      setSyncStatus('synced');
+      setSyncMessage('Synced with cloud database successfully.');
+      return true;
+    } else {
+      setSyncStatus('error');
+      setSyncMessage('Could not fetch cloud data. Verify your database URL or network.');
+      return false;
+    }
+  };
+
+  // Initial Cloud Hydration: Runs on every browser load
+  useEffect(() => {
+    let isMounted = true;
+    const hydrate = async () => {
+      try {
+        let activeConfig = cloudConfig;
+        // Check if there is a shared public config file on the server
+        if (!activeConfig.firebaseUrl) {
+          try {
+            const cfgRes = await fetch('/cloudConfig.json', { cache: 'no-store' });
+            if (cfgRes.ok) {
+              const cfgData = await cfgRes.json();
+              if (cfgData.firebaseUrl) {
+                activeConfig = { ...activeConfig, ...cfgData };
+                setCloudConfig(activeConfig);
+              }
+            }
+          } catch {}
+        }
+
+        const remote = await fetchFromCloud(activeConfig);
+        if (remote && isMounted) {
+          applyAllData(remote);
+          setSyncStatus('synced');
+          setSyncMessage('Portfolio content synchronized with cloud.');
+        }
+      } catch (err) {
+        console.warn('Initial cloud sync check:', err);
+      } finally {
+        if (isMounted) {
+          hasHydratedRef.current = true;
+        }
+      }
+    };
+
+    hydrate();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Debounced Auto-Sync: When admin edits content, automatically push to cloud DB
+  useEffect(() => {
+    if (!hasHydratedRef.current) return;
+    if (!cloudConfig.autoSync) return;
+    const hasEndpoint =
+      (cloudConfig.provider === 'firebase' && !!cloudConfig.firebaseUrl?.trim()) ||
+      (cloudConfig.provider === 'custom_rest' && !!cloudConfig.customRestUrl?.trim());
+
+    if (!hasEndpoint) return;
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(async () => {
+      setSyncStatus('syncing');
+      const payload: FullPortfolioData = {
+        brand,
+        skills,
+        videos,
+        categories,
+        links,
+        reviews,
+        policyRules,
+        policyNotice,
+        theme,
+      };
+      const res = await saveToCloud(cloudConfig, payload);
+      if (res.success) {
+        setSyncStatus('synced');
+        setSyncMessage('Changes auto-synced to cloud database!');
+        updateCloudConfig({ lastSyncedAt: new Date().toISOString() });
+      } else {
+        setSyncStatus('error');
+        setSyncMessage(res.message);
+      }
+    }, 2000);
+
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, [brand, skills, videos, categories, links, reviews, policyRules, policyNotice, theme]);
 
   return (
     <PortfolioContext.Provider
@@ -734,6 +900,12 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         exportPortfolioData,
         importPortfolioData,
         resetToDefaultData,
+        cloudConfig,
+        updateCloudConfig,
+        syncStatus,
+        syncMessage,
+        syncToCloudNow,
+        fetchFromCloudNow,
       }}
     >
       {children}

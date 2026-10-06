@@ -1,0 +1,368 @@
+{
+  "brand": {
+    "name": "AL1 Studio",
+    "tagline": "Video Editing & Content Creation",
+    "bio": "Crafting high-retention viral content, dynamic commercial spots, and cinematic visual storytelling for top digital creators and forward-thinking brands.",
+    "location": "Global / Remote Studio",
+    "statusText": "Accepting New Projects & Retainers"
+  },
+  "skills": [
+    {
+      "id": "skill-premiere",
+      "name": "Adobe Premiere Pro",
+      "proficiency": 98,
+      "badge": "Lead NLE & Pacing",
+      "icon": "Film",
+      "order": 1
+    },
+    {
+      "id": "skill-ae",
+      "name": "After Effects",
+      "proficiency": 95,
+      "badge": "Kinetic Motion & VFX",
+      "icon": "Layers",
+      "order": 2
+    },
+    {
+      "id": "skill-davinci",
+      "name": "DaVinci Resolve",
+      "proficiency": 92,
+      "badge": "Theatrical Color Science",
+      "icon": "Sliders",
+      "order": 3
+    },
+    {
+      "id": "skill-capcut",
+      "name": "CapCut Pro",
+      "proficiency": 96,
+      "badge": "High-Retention Hooks",
+      "icon": "Smartphone",
+      "order": 4
+    },
+    {
+      "id": "skill-blender",
+      "name": "Blender 3D",
+      "proficiency": 85,
+      "badge": "3D Tracking & Assets",
+      "icon": "Box",
+      "order": 5
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-all",
+      "name": "All Projects",
+      "slug": "all",
+      "order": 1
+    },
+    {
+      "id": "cat-shorts",
+      "name": "Shorts & Reels",
+      "slug": "shorts",
+      "order": 2
+    },
+    {
+      "id": "cat-commercials",
+      "name": "Commercials & Ads",
+      "slug": "commercials",
+      "order": 3
+    },
+    {
+      "id": "cat-gaming",
+      "name": "Gaming Highlights",
+      "slug": "gaming",
+      "order": 4
+    },
+    {
+      "id": "cat-vlogs",
+      "name": "YouTube & Vlogs",
+      "slug": "vlogs",
+      "order": 5
+    }
+  ],
+  "videos": [
+    {
+      "id": "vid-1",
+      "title": "Cyberpunk Hyper-Speed Commercial Reel",
+      "youtubeId": "Bey4XXJAqS8",
+      "youtubeUrl": "https://www.youtube.com/watch?v=Bey4XXJAqS8",
+      "thumbnail": "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1200&q=80",
+      "category": "commercials",
+      "duration": "01:45",
+      "views": "2.4M",
+      "client": "CyberCore Tech",
+      "aspectRatio": "16:9",
+      "isFeatured": true,
+      "order": 1
+    },
+    {
+      "id": "vid-2",
+      "title": "Viral Hook Retention Masterclass - Vertical Short",
+      "youtubeId": "LXb3EKWsInQ",
+      "youtubeUrl": "https://www.youtube.com/watch?v=LXb3EKWsInQ",
+      "thumbnail": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+      "category": "shorts",
+      "duration": "00:38",
+      "views": "14.2M",
+      "client": "Fintech Creator",
+      "aspectRatio": "9:16",
+      "isFeatured": true,
+      "order": 2
+    },
+    {
+      "id": "vid-3",
+      "title": "VALORANT Champions - High Energy Frag Movie",
+      "youtubeId": "7wtfhZwyrcc",
+      "youtubeUrl": "https://www.youtube.com/watch?v=7wtfhZwyrcc",
+      "thumbnail": "https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=1200&q=80",
+      "category": "gaming",
+      "duration": "03:12",
+      "views": "5.8M",
+      "client": "Sentinels Esports Pro",
+      "aspectRatio": "16:9",
+      "isFeatured": true,
+      "order": 3
+    },
+    {
+      "id": "vid-4",
+      "title": "MrBeast Style Pacing: Luxury Travel Challenge",
+      "youtubeId": "kJQP7kiw5Fk",
+      "youtubeUrl": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+      "thumbnail": "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80",
+      "category": "vlogs",
+      "duration": "11:40",
+      "views": "8.4M",
+      "client": "Jetsetter Channel (3.8M Subs)",
+      "aspectRatio": "16:9",
+      "isFeatured": false,
+      "order": 4
+    },
+    {
+      "id": "vid-5",
+      "title": "Gym Shark Athlete Motivation - 9:16 Reel",
+      "youtubeId": "L_LUpnjgPso",
+      "youtubeUrl": "https://www.youtube.com/watch?v=L_LUpnjgPso",
+      "thumbnail": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80",
+      "category": "shorts",
+      "duration": "00:45",
+      "views": "9.3M",
+      "client": "Apex Fitness Media",
+      "aspectRatio": "9:16",
+      "isFeatured": false,
+      "order": 5
+    },
+    {
+      "id": "vid-6",
+      "title": "Patagonia: The Wild Earth Documentary Mini",
+      "youtubeId": "EngW7tLk6R8",
+      "youtubeUrl": "https://www.youtube.com/watch?v=EngW7tLk6R8",
+      "thumbnail": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80",
+      "category": "commercials",
+      "duration": "04:20",
+      "views": "890K",
+      "client": "Alpine Expeditions",
+      "aspectRatio": "16:9",
+      "isFeatured": false,
+      "order": 6
+    }
+  ],
+  "links": [
+    {
+      "id": "link-youtube",
+      "title": "YouTube Channel",
+      "subtitle": "Watch long-form portfolio & editing breakdowns",
+      "url": "https://youtube.com/@AL1Studio",
+      "icon": "youtube",
+      "badge": "Main Hub",
+      "accentColor": "#ef4444",
+      "isActive": true,
+      "order": 1
+    },
+    {
+      "id": "link-tiktok",
+      "title": "TikTok Viral Reels",
+      "subtitle": "High retention shorts & trending edits",
+      "url": "https://tiktok.com/@al1studio",
+      "icon": "tiktok",
+      "badge": "14M+ Views",
+      "accentColor": "#f43f5e",
+      "isActive": true,
+      "order": 2
+    },
+    {
+      "id": "link-whatsapp",
+      "title": "Instant WhatsApp Chat",
+      "subtitle": "Fastest response time (< 15 mins for project quotes)",
+      "url": "https://wa.me/15557893210?text=Hi%20AL1%20Studio!%20I%20have%20a%20video%20project%20I%20would%20like%20to%20hire%20you%20for.",
+      "icon": "whatsapp",
+      "badge": "Direct Contact",
+      "accentColor": "#10b981",
+      "isActive": true,
+      "order": 3
+    },
+    {
+      "id": "link-instagram",
+      "title": "Instagram @al1studio",
+      "subtitle": "Timeline screenshots & behind the scenes",
+      "url": "https://instagram.com/al1studio",
+      "icon": "instagram",
+      "badge": "Visuals",
+      "accentColor": "#ec4899",
+      "isActive": true,
+      "order": 4
+    },
+    {
+      "id": "link-email",
+      "title": "Direct Business Email",
+      "subtitle": "contact@al1studio.com",
+      "url": "mailto:contact@al1studio.com?subject=Video%20Editing%20Inquiry%20-%20AL1%20Studio",
+      "icon": "mail",
+      "badge": "Official",
+      "accentColor": "#06b6d4",
+      "isActive": true,
+      "order": 5
+    },
+    {
+      "id": "link-facebook",
+      "title": "Facebook Creator Page",
+      "subtitle": "Client releases & project updates",
+      "url": "https://facebook.com/al1studio",
+      "icon": "facebook",
+      "badge": "Follow",
+      "accentColor": "#3b82f6",
+      "isActive": true,
+      "order": 6
+    },
+    {
+      "id": "link-discord",
+      "title": "Discord Community",
+      "subtitle": "Creator hangouts & timeline peer review",
+      "url": "https://discord.gg/al1studio",
+      "icon": "discord",
+      "badge": "Community",
+      "accentColor": "#6366f1",
+      "isActive": true,
+      "order": 7
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev-1",
+      "clientName": "Marcus Reynolds",
+      "clientPhoto": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "clientRole": "Apex Tech Reviews (2.8M Subscribers)",
+      "rating": 5,
+      "text": "AL1 Studio transformed our YouTube channel pacing. Average view duration jumped from 35% to 58%, and the micro-zooms and sound effects are perfection. Indispensable post-production partner!",
+      "projectReference": "YouTube Long-Form Series",
+      "date": "February 2026",
+      "platformBadge": "YouTube Creator",
+      "accentColor": "#06b6d4",
+      "isVerified": true,
+      "order": 1
+    },
+    {
+      "id": "rev-2",
+      "clientName": "Elena Rostova",
+      "clientPhoto": "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80",
+      "clientRole": "Vortex Esports International (Head of Media)",
+      "rating": 5,
+      "text": "The tournament frag movie delivered over 5.8 Million views in 48 hours. Frame-accurate beat sync and 3D camera velocity ramp made it our highest performing video of the year.",
+      "projectReference": "VALORANT Champions Frag Movie",
+      "date": "January 2026",
+      "platformBadge": "Esports Gaming",
+      "accentColor": "#a855f7",
+      "isVerified": true,
+      "order": 2
+    },
+    {
+      "id": "rev-3",
+      "clientName": "Julian Croft",
+      "clientPhoto": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      "clientRole": "Loom & Ledger Luxury (Creative Director)",
+      "rating": 5,
+      "text": "Immaculate color science and fast turnarounds on impossible deadlines. AL1 Studio elevated our product commercial into a theatrical masterpiece that generated a 3.4x ad CTR.",
+      "projectReference": "Cyberpunk Commercial Reel",
+      "date": "December 2025",
+      "platformBadge": "Commercial Brand",
+      "accentColor": "#f59e0b",
+      "isVerified": true,
+      "order": 3
+    }
+  ],
+  "policyRules": [
+    {
+      "id": "rule-1",
+      "ruleNumber": "01",
+      "title": "গান ও বাদ্যযন্ত্র",
+      "description": "কোনো প্রকার গান বা বাদ্যযন্ত্র দেওয়া যাবে না। তবে প্রয়োজনে সাউন্ড ইফেক্ট (SFX) ব্যবহার করা যাবে।",
+      "hadithReference": "রাসূলুল্লাহ ﷺ বলেছেন: \"আমার উম্মতের মধ্যে অবশ্যই এমন কিছু লোকের আবির্ভাব ঘটবে, যারা ব্যভিচার, রেশম, মদ ও বাদ্যযন্ত্রকে হালাল মনে করবে।\" — (সহীহ বুখারী, হাদিস নং ৫৫৯০)",
+      "detailedExplanation": "ইসলামিক শরীয়াহ অনুযায়ী কোনো প্রকার গান বা বাদ্যযন্ত্রের মিউজিক ব্যবহার করা সম্পূর্ণ হারাম। ভিডিওতে ব্যাকগ্রাউন্ড মিউজিক বা গান দেওয়া যাবে না। তবে প্রয়োজনে প্রফেশনাল সাউন্ড ইফেক্ট (SFX), যেমন: রাইজার, হর্শ, সিনেমাটিক অ্যাম্বিয়েন্স ব্যবহার করা যাবে।",
+      "youtubeUrl": "https://www.youtube.com/watch?v=2SgY6H7gK4M",
+      "pinColor": "red",
+      "order": 1
+    },
+    {
+      "id": "rule-2",
+      "ruleNumber": "02",
+      "title": "নারীর ছবি ও অশ্লীলতা",
+      "description": "কোনো অনাবৃত, আপত্তিকর বা নারীর ছবি এবং অশ্লীল উপাদান সম্পূর্ণ নিষেধ।",
+      "hadithReference": "আল্লাহ তাআলা বলেন: \"মুমিন পুরুষদেরকে বলুন, তারা যেন তাদের দৃষ্টিকে সংযত রাখে এবং তাদের লজ্জাস্থানের হেফাজত করে।\" — (সূরা আন-নূর, আয়াত ৩০)",
+      "detailedExplanation": "অনাবৃত, বেপর্দা বা অশ্লীল কোনো উপাদান বা নারীর ছবি ও দৃশ্য ভিডিওতে সম্পূর্ণ নিষিদ্ধ। শালীনতা বজায় রেখে শুধুমাত্র অনুমোদিত গ্রাফিক্স ও এলিমেন্ট নিয়ে কাজ করা হবে।",
+      "youtubeUrl": "",
+      "pinColor": "blue",
+      "order": 2
+    },
+    {
+      "id": "rule-3",
+      "ruleNumber": "03",
+      "title": "হারাম পণ্য",
+      "description": "মদ, জুয়া, সুদ বা যেকোনো শরিয়তবিরোধী পণ্যের প্রচারণা করা যাবে না।",
+      "hadithReference": "আল্লাহ তাআলা বলেন: \"হে মুমিনগণ, এই যে মদ, জুয়া, প্রতিমা এবং ভাগ্য নির্ধারক তীরসমূহ—এসব শয়তানের অপবিত্র কাজ। অতএব তোমরা এগুলো থেকে দূরে থাক।\" — (সূরা আল-মায়েদা, আয়াত ৯০)",
+      "detailedExplanation": "মদ, জুয়া, লটারি, অনলাইন ক্যাসিনো, বেটিং অ্যাপস, সুদী ব্যাংক বা লোন অ্যাপ এবং যেকোনো ইসলামবিরোধী পণ্যের কোনো প্রকার প্রমোশনাল বা কন্টেন্ট এডিটিং করা হবে না।",
+      "youtubeUrl": "",
+      "pinColor": "purple",
+      "order": 3
+    },
+    {
+      "id": "rule-4",
+      "ruleNumber": "04",
+      "title": "পণ্য ও রেফারেন্স ইমেজ",
+      "description": "পণ্যের মূল ছবি ক্লায়েন্টকেই দিতে হবে। তবে বড় ব্র্যান্ডের আইকন বা প্রয়োজনীয় ফ্রি রেফারেন্স উপাদান লাইসেন্স মেনে ব্যবহার করা যাবে।",
+      "hadithReference": "রাসূলুল্লাহ ﷺ বলেছেন: \"যার মধ্যে আমানতদারিতা নেই, তার প্রকৃত ঈমান নেই।\" — (মুসনাদে আহমাদ, হাদিস ১২৩৮৩)",
+      "detailedExplanation": "পণ্যের মূল ও নির্ভুল ছবি ক্লায়েন্টকেই সরবরাহ করতে হবে। অনুমোদিত স্টক ফুটেজ বা ব্র্যান্ড আইকন লাইসেন্স মেনে কপিরাইট লঙ্ঘন না করে রেফারেন্স হিসেবে ব্যবহার করা যাবে।",
+      "youtubeUrl": "",
+      "pinColor": "orange",
+      "order": 4
+    },
+    {
+      "id": "rule-5",
+      "ruleNumber": "05",
+      "title": "মিথ্যা ও ধোঁকাবাজি",
+      "description": "এডিটিংয়ের মাধ্যমে পণ্যের আসল রূপ বিকৃত করা বা গ্রাহককে প্রতারণা করার মতো কিছু দেখানো যাবে না।",
+      "hadithReference": "রাসূলুল্লাহ ﷺ বলেছেন: \"যে ব্যক্তি ধোঁকা দেয়, সে আমার দলভুক্ত নয়।\" — (সহীহ মুসলিম, হাদিস নং ১০২)",
+      "detailedExplanation": "ভিডিওতে এডিটিংয়ের মাধ্যমে কোনো পণ্যের ত্রুটি লুকিয়ে গ্রাহককে ঠকানো বা ভুল তথ্য দিয়ে প্রচারণা করা ইসলামে হারাম। সর্বদা সততা ও স্বচ্ছতা বজায় রাখতে হবে।",
+      "youtubeUrl": "",
+      "pinColor": "blue",
+      "order": 5
+    },
+    {
+      "id": "rule-6",
+      "ruleNumber": "06",
+      "title": "শির্ক ও পৌত্তলিক উপাদান",
+      "description": "অন্য কোনো ধর্মের প্রতীক, শিরকীয় উপাদান বা শরিয়তবিরোধী চিহ্ন ব্যবহার করা যাবে না।",
+      "hadithReference": "আল্লাহ তাআলা বলেন: \"নিশ্চয় আল্লাহ তাঁর সাথে শিরক করার অপরাধ ক্ষমা করেন না, এ ছাড়া অন্য যে কোনো পাপ যাকে ইচ্ছা ক্ষমা করেন।\" — (সূরা আন-নিসা, আয়াত ৪৮)",
+      "detailedExplanation": "কোনো পৌত্তলিক ধর্মীয় প্রতীক, শিরকপূর্ণ প্রতীক বা ইসলামবিরোধী কোনো ধরনের ধর্মীয় চিহ্ন দিয়ে ভিডিও এডিটিং করা সম্পূর্ণ নিষিদ্ধ।",
+      "youtubeUrl": "",
+      "pinColor": "purple",
+      "order": 6
+    }
+  ],
+  "policyNotice": "আপনার বিজ্ঞাপন বা ভিডিওতে এমন কিছু নিয়ম বা বিষয় থাকতে পারে যা এখানে সংক্ষেপের কারণে বলা সম্ভব হয়নি। যাবতীয় বিষয় বিস্তারিত জানতে সরাসরি ইনবক্স করুন।",
+  "theme": {
+    "mode": "dark",
+    "accent": "cyan",
+    "particleIntensity": "medium",
+    "cursorTrail": true
+  },
+  "updatedAt": "2026-10-06T07:52:04.096Z"
+}

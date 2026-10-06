@@ -32,8 +32,15 @@ import {
   BookOpen,
   Info,
   ShieldCheck,
+  Cloud,
+  UploadCloud,
+  RefreshCw,
+  Copy,
+  ExternalLink,
+  Database,
 } from 'lucide-react';
 import { usePortfolio } from '../../context/PortfolioContext';
+import { generateInitialDataTs } from '../../services/cloudSync';
 import type {
   VideoProject,
   HubLink,
@@ -49,6 +56,12 @@ import type {
 const YouTubeIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
   <svg className={`fill-current ${className}`} viewBox="0 0 24 24">
     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+  </svg>
+);
+
+const GithubIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={`fill-current ${className}`} viewBox="0 0 24 24">
+    <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
   </svg>
 );
 
@@ -237,6 +250,12 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     exportPortfolioData,
     importPortfolioData,
     resetToDefaultData,
+    cloudConfig,
+    updateCloudConfig,
+    syncStatus,
+    syncMessage,
+    syncToCloudNow,
+    fetchFromCloudNow,
   } = usePortfolio();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('videos');
@@ -386,6 +405,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
   const [importJson, setImportJson] = useState('');
   const [importMessage, setImportMessage] = useState<{ success: boolean; msg: string } | null>(null);
 
+  // Cloud Database & Multi-Browser Sync state
+  const [cloudForm, setCloudForm] = useState(cloudConfig);
+  const [cloudFeedback, setCloudFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [copiedTs, setCopiedTs] = useState(false);
+  const [copiedConfig, setCopiedConfig] = useState(false);
+  const [showFirebaseGuide, setShowFirebaseGuide] = useState(false);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
+
   if (!isOpen) return null;
 
   // Login handler
@@ -423,6 +450,96 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     updateBrand(brandForm);
     setBrandSaved(true);
     setTimeout(() => setBrandSaved(false), 2000);
+  };
+
+  // Cloud Database Handlers
+  const handleSaveCloudConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateCloudConfig(cloudForm);
+    setCloudFeedback({ type: 'success', msg: 'Cloud settings saved successfully!' });
+    setTimeout(() => setCloudFeedback(null), 3500);
+  };
+
+  const handleManualSyncNow = async () => {
+    setIsCloudSyncing(true);
+    updateCloudConfig(cloudForm);
+    const res = await syncToCloudNow();
+    setIsCloudSyncing(false);
+    setCloudFeedback({ type: res.success ? 'success' : 'error', msg: res.message });
+    setTimeout(() => setCloudFeedback(null), 6000);
+  };
+
+  const handleManualFetchNow = async () => {
+    setIsCloudSyncing(true);
+    updateCloudConfig(cloudForm);
+    const ok = await fetchFromCloudNow();
+    setIsCloudSyncing(false);
+    setCloudFeedback({
+      type: ok ? 'success' : 'error',
+      msg: ok ? 'Successfully downloaded latest portfolio data from cloud!' : 'Could not fetch cloud data. Check URL/connection.',
+    });
+    setTimeout(() => setCloudFeedback(null), 5000);
+  };
+
+  const handleCopyInitialDataTs = () => {
+    const fullData = {
+      brand,
+      skills,
+      videos,
+      categories,
+      links,
+      reviews,
+      policyRules,
+      policyNotice,
+      theme,
+    };
+    const code = generateInitialDataTs(fullData);
+    navigator.clipboard.writeText(code);
+    setCopiedTs(true);
+    setTimeout(() => setCopiedTs(false), 3000);
+  };
+
+  const handleDownloadCloudConfigJson = () => {
+    const cfg = {
+      provider: cloudForm.provider,
+      firebaseUrl: cloudForm.firebaseUrl,
+      customRestUrl: cloudForm.customRestUrl,
+    };
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cloudConfig.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setCopiedConfig(true);
+    setTimeout(() => setCopiedConfig(false), 3000);
+  };
+
+  const handleDownloadPortfolioDataJson = () => {
+    const fullData = {
+      brand,
+      skills,
+      videos,
+      categories,
+      links,
+      reviews,
+      policyRules,
+      policyNotice,
+      theme,
+      updatedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(fullData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'portfolioData.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // Live YouTube Input Handler (Auto-extract ID + auto thumbnail + auto 9:16 detection)
@@ -3131,6 +3248,332 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                       </button>
                     </div>
                   </form>
+
+                  {/* LIVE CLOUD DATABASE & MULTI-BROWSER SYNC */}
+                  <div className="pt-6 border-t border-white/10 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h4 className="font-heading font-bold text-base text-white flex items-center gap-2">
+                          <Cloud className="w-4 h-4 text-cyan-400" />
+                          Cloud Database & Multi-Browser Sync (সব ব্রাউজারে লাইভ আপডেট)
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">
+                          Admin Panel এ পরিবর্তন করলে তা যাতে সব ব্রাউজার, মোবাইল ও ভিজিটরদের কাছে সাথে সাথে আপডেট হয়।
+                        </p>
+                      </div>
+
+                      {/* Connection status badge */}
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-2">
+                          {syncStatus === 'syncing' ? (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 animate-pulse">
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                              Syncing...
+                            </span>
+                          ) : cloudConfig.firebaseUrl || cloudConfig.customRestUrl ? (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                              Live Cloud Active
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-neutral-800 text-neutral-400 border border-white/10 flex items-center gap-1.5">
+                              <Database className="w-3 h-3" />
+                              Local Cache Only
+                            </span>
+                          )}
+                        </div>
+                        {syncMessage && (
+                          <span className="text-[10px] text-neutral-400">
+                            {syncMessage}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {cloudFeedback && (
+                      <div
+                        className={`p-3 rounded-xl text-xs font-semibold border ${
+                          cloudFeedback.type === 'success'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                        }`}
+                      >
+                        {cloudFeedback.msg}
+                      </div>
+                    )}
+
+                    {/* Method Selector */}
+                    <div className="p-4 rounded-2xl glass-panel border border-white/10 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCloudForm({ ...cloudForm, provider: 'firebase' })}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            cloudForm.provider === 'firebase'
+                              ? 'border-cyan-500 bg-cyan-500/15 text-white'
+                              : 'border-white/5 bg-white/[0.02] text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 font-bold text-xs text-cyan-300 mb-1">
+                            <Cloud className="w-4 h-4" />
+                            Firebase Realtime DB
+                          </div>
+                          <p className="text-[10px] text-neutral-400 leading-tight">
+                            ১০০% ফ্রি, সার্ভারলেস। যেকোনো ব্রাউজারে সাথে সাথে লাইভ আপডেট।
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setCloudForm({ ...cloudForm, provider: 'github' })}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            cloudForm.provider === 'github'
+                              ? 'border-purple-500 bg-purple-500/15 text-white'
+                              : 'border-white/5 bg-white/[0.02] text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 font-bold text-xs text-purple-300 mb-1">
+                            <GithubIcon className="w-4 h-4" />
+                            GitHub Direct Sync
+                          </div>
+                          <p className="text-[10px] text-neutral-400 leading-tight">
+                            সরাসরি গিটহাবে কমিট হবে এবং Vercel অটো রি-ডিপ্লয় করবে।
+                          </p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setCloudForm({ ...cloudForm, provider: 'custom_rest' })}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            cloudForm.provider === 'custom_rest'
+                              ? 'border-emerald-500 bg-emerald-500/15 text-white'
+                              : 'border-white/5 bg-white/[0.02] text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 font-bold text-xs text-emerald-300 mb-1">
+                            <Database className="w-4 h-4" />
+                            Custom REST API
+                          </div>
+                          <p className="text-[10px] text-neutral-400 leading-tight">
+                            কাস্টম সার্ভার বা নিজের যেকোনো API এন্ডপয়েন্ট।
+                          </p>
+                        </button>
+                      </div>
+
+                      {/* Provider Details Form */}
+                      {cloudForm.provider === 'firebase' && (
+                        <div className="space-y-3 pt-2">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-neutral-300 font-semibold text-xs">
+                                Firebase Realtime Database URL:
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setShowFirebaseGuide(!showFirebaseGuide)}
+                                className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
+                              >
+                                <Info className="w-3 h-3" />
+                                {showFirebaseGuide ? 'Hide Guide' : '২ মিনিটে ফ্রি Firebase সেটআপ গাইড'}
+                              </button>
+                            </div>
+                            <input
+                              type="url"
+                              value={cloudForm.firebaseUrl}
+                              onChange={(e) => setCloudForm({ ...cloudForm, firebaseUrl: e.target.value })}
+                              placeholder="https://your-portfolio-default-rtdb.firebaseio.com"
+                              className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-cyan-500"
+                            />
+                          </div>
+
+                          {showFirebaseGuide && (
+                            <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-800/40 text-[11px] text-cyan-200/90 space-y-1.5 leading-relaxed">
+                              <p className="font-bold text-white flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                মাত্র ৩ ধাপে বিনামূল্যে Firebase Realtime DB চালু করুন:
+                              </p>
+                              <ol className="list-decimal pl-4 space-y-1">
+                                <li>
+                                  <a
+                                    href="https://console.firebase.google.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-cyan-300 underline font-semibold inline-flex items-center gap-0.5"
+                                  >
+                                    console.firebase.google.com <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>{' '}
+                                  এ গিয়ে <b>Add Project</b> দিয়ে যেকোনো প্রজেক্ট খুলুন (ফ্রি Spark প্ল্যান)।
+                                </li>
+                                <li>
+                                  বামপাশের মেনু থেকে <b>Build &gt; Realtime Database</b> সিলেক্ট করে <b>Create Database</b> চাপুন।
+                                </li>
+                                <li>
+                                  Security Rules এ <b>Start in test mode</b> সিলেক্ট করে Done দিন। উপরে তৈরি হওয়া ডাটাবেস URL (যেমন <code>https://xxx-rtdb.firebaseio.com</code>) কপি করে এই বক্সে বসিয়ে নিচের বাটন চাপুন!
+                                </li>
+                              </ol>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between text-xs pt-1">
+                            <label className="flex items-center gap-2 text-neutral-300 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={cloudForm.autoSync}
+                                onChange={(e) => setCloudForm({ ...cloudForm, autoSync: e.target.checked })}
+                                className="rounded text-cyan-500 focus:ring-0"
+                              />
+                              <span>Admin Panel এ যেকোনো পরিবর্তন সাথে সাথে অটোমেটিক সেভ হবে</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
+                      {cloudForm.provider === 'github' && (
+                        <div className="space-y-3 pt-2 text-xs">
+                          <div>
+                            <label className="block text-neutral-300 font-semibold mb-1">
+                              GitHub Personal Access Token (PAT):
+                            </label>
+                            <input
+                              type="password"
+                              value={cloudForm.githubToken}
+                              onChange={(e) => setCloudForm({ ...cloudForm, githubToken: e.target.value })}
+                              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                              className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white font-mono text-xs focus:outline-none"
+                            />
+                            <p className="text-[10px] text-neutral-500 mt-1">
+                              Repo write permission সহ একটি GitHub Token প্রয়োজন। এটি সরাসরি রিপোজিটরিতে <code>public/portfolioData.json</code> ফাইল কমিট করবে।
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-neutral-400 mb-1 text-[11px]">Repository</label>
+                              <input
+                                type="text"
+                                value={cloudForm.githubRepo}
+                                onChange={(e) => setCloudForm({ ...cloudForm, githubRepo: e.target.value })}
+                                className="w-full px-3 py-1.5 rounded-xl glass-panel border border-white/10 text-white text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-neutral-400 mb-1 text-[11px]">Branch</label>
+                              <input
+                                type="text"
+                                value={cloudForm.githubBranch}
+                                onChange={(e) => setCloudForm({ ...cloudForm, githubBranch: e.target.value })}
+                                className="w-full px-3 py-1.5 rounded-xl glass-panel border border-white/10 text-white text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {cloudForm.provider === 'custom_rest' && (
+                        <div className="space-y-3 pt-2 text-xs">
+                          <div>
+                            <label className="block text-neutral-300 font-semibold mb-1">
+                              Custom API Endpoint URL (GET/PUT):
+                            </label>
+                            <input
+                              type="url"
+                              value={cloudForm.customRestUrl}
+                              onChange={(e) => setCloudForm({ ...cloudForm, customRestUrl: e.target.value })}
+                              placeholder="https://api.yourdomain.com/portfolio"
+                              className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white font-mono text-xs focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-neutral-300 font-semibold mb-1">
+                              API Key / Secret Token (Optional):
+                            </label>
+                            <input
+                              type="password"
+                              value={cloudForm.customApiKey}
+                              onChange={(e) => setCloudForm({ ...cloudForm, customApiKey: e.target.value })}
+                              placeholder="Bearer token or secret..."
+                              className="w-full px-3 py-2 rounded-xl glass-panel border border-white/10 text-white font-mono text-xs focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={handleSaveCloudConfig}
+                          className="px-4 py-2 rounded-xl text-black font-bold text-xs uppercase tracking-wider"
+                          style={{ backgroundColor: 'var(--accent)' }}
+                        >
+                          Save Cloud Settings
+                        </button>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={isCloudSyncing}
+                            onClick={handleManualSyncNow}
+                            className="px-3.5 py-2 rounded-xl glass-panel border border-cyan-500/40 hover:bg-cyan-500/20 text-cyan-300 font-bold text-xs flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            <UploadCloud className="w-3.5 h-3.5" />
+                            <span>{isCloudSyncing ? 'Syncing...' : 'Sync Now to Cloud'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={isCloudSyncing}
+                            onClick={handleManualFetchNow}
+                            className="px-3.5 py-2 rounded-xl glass-panel border border-white/15 hover:bg-white/10 text-neutral-300 font-bold text-xs flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isCloudSyncing ? 'animate-spin' : ''}`} />
+                            <span>Fetch Latest</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Offline / Code Export Options (Always work 100% without any DB) */}
+                    <div className="p-4 rounded-2xl glass-panel border border-white/10 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h5 className="font-heading font-bold text-xs text-white flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          ডাটাবেজ ছাড়া সরাসরি কোডে পার্মানেন্ট সেভ করার বিকল্প অপশন:
+                        </h5>
+                      </div>
+                      <p className="text-[11px] text-neutral-400 leading-relaxed">
+                        আপনি চাইলে ডাটাবেজ ছাড়াও বর্তমান সব চেঞ্জ সহ কোড কপি করে নিতে পারেন অথবা <code>portfolioData.json</code> ফাইল ডাউনলোড করে আপনার প্রজেক্টের <code>public/</code> ফোল্ডারে রিপ্লেস করে গিটহাবে পুশ করলেই সবার জন্য পার্মানেন্ট হয়ে যাবে।
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleCopyInitialDataTs}
+                          className="px-3.5 py-2 rounded-xl glass-panel border border-amber-500/40 hover:bg-amber-500/20 text-amber-300 text-xs font-bold flex items-center gap-1.5"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>{copiedTs ? 'Copied initialData.ts!' : 'Copy Code as initialData.ts'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadPortfolioDataJson}
+                          className="px-3.5 py-2 rounded-xl glass-panel border border-white/15 hover:bg-white/10 text-neutral-200 text-xs font-bold flex items-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download portfolioData.json</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleDownloadCloudConfigJson}
+                          className="px-3.5 py-2 rounded-xl glass-panel border border-cyan-500/30 hover:bg-cyan-500/15 text-cyan-300 text-xs font-bold flex items-center gap-1.5"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>{copiedConfig ? 'Downloaded!' : 'Download cloudConfig.json'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Data Backup & Restore */}
                   <div className="pt-6 border-t border-white/10 space-y-4">
