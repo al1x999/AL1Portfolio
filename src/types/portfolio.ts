@@ -93,10 +93,38 @@ export interface PolicyRule {
   title: string;
   description: string;
   hadithReference?: string;
+  hadithReferences?: string[];
   detailedExplanation?: string;
   youtubeUrl?: string;
+  youtubeUrls?: string[];
   pinColor?: PinColor;
   order: number;
+}
+
+export function getPolicyHadiths(rule: PolicyRule): string[] {
+  const list: string[] = [];
+  if (rule.hadithReferences && Array.isArray(rule.hadithReferences)) {
+    rule.hadithReferences.forEach((h) => {
+      if (h && typeof h === 'string' && h.trim()) list.push(h.trim());
+    });
+  }
+  if (list.length === 0 && rule.hadithReference?.trim()) {
+    list.push(rule.hadithReference.trim());
+  }
+  return list;
+}
+
+export function getPolicyYouTubeUrls(rule: PolicyRule): string[] {
+  const list: string[] = [];
+  if (rule.youtubeUrls && Array.isArray(rule.youtubeUrls)) {
+    rule.youtubeUrls.forEach((u) => {
+      if (u && typeof u === 'string' && u.trim()) list.push(u.trim());
+    });
+  }
+  if (list.length === 0 && rule.youtubeUrl?.trim()) {
+    list.push(rule.youtubeUrl.trim());
+  }
+  return list;
 }
 
 export interface ThemeConfig {

@@ -14,7 +14,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../context/PortfolioContext';
-import type { PolicyRule, PinColor } from '../types/portfolio';
+import {
+  type PolicyRule,
+  type PinColor,
+  getPolicyHadiths,
+  getPolicyYouTubeUrls,
+} from '../types/portfolio';
 import { extractYouTubeId } from '../utils/youtube';
 
 const YouTubeIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
@@ -164,6 +169,8 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
         <div className="grid grid-cols-1 md:grid-cols-2 gap-7 sm:gap-8 relative z-10">
           {sortedRules.map((rule, idx) => {
             const pin = getPinDetails(rule.pinColor);
+            const hadiths = getPolicyHadiths(rule);
+            const videos = getPolicyYouTubeUrls(rule);
 
             return (
               <motion.div
@@ -195,16 +202,16 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
                   </span>
 
                   <div className="flex items-center gap-1.5">
-                    {rule.hadithReference && (
+                    {hadiths.length > 0 && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                         <BookOpen className="w-3 h-3" />
-                        <span>হাদিস রেফারেন্স</span>
+                        <span>{hadiths.length > 1 ? `${hadiths.length}টি দলিল` : 'হাদিস দলিল'}</span>
                       </span>
                     )}
-                    {rule.youtubeUrl && (
+                    {videos.length > 0 && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 flex items-center gap-1">
                         <YouTubeIcon className="w-3 h-3 text-red-500" />
-                        <span>ভিডিও</span>
+                        <span>{videos.length > 1 ? `${videos.length}টি ভিডিও` : 'ভিডিও'}</span>
                       </span>
                     )}
                   </div>
@@ -221,12 +228,19 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
                 </p>
 
                 {/* Hadith / Quran Preview Pill if exists */}
-                {rule.hadithReference && (
+                {hadiths.length > 0 && (
                   <div className="mt-3 p-2.5 rounded-xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/10 text-[11px] text-neutral-600 dark:text-neutral-300 flex items-start gap-2">
                     <BookOpen className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                    <p className="line-clamp-2 italic leading-relaxed">
-                      "{rule.hadithReference}"
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="line-clamp-2 italic leading-relaxed">
+                        "{hadiths[0]}"
+                      </p>
+                      {hadiths.length > 1 && (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 inline-block">
+                          + আরও {hadiths.length - 1}টি হাদিস/দলিল রয়েছে
+                        </span>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -237,16 +251,16 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
                     <span>বিস্তারিত ও দলিল দেখতে ক্লিক করুন</span>
                   </span>
 
-                  {rule.youtubeUrl && (
+                  {videos.length > 0 && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setVideoModalUrl(rule.youtubeUrl!);
+                        setVideoModalUrl(videos[0]);
                       }}
                       className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline flex items-center gap-1"
                     >
                       <Play className="w-3 h-3 fill-current" />
-                      <span>ভিডিও</span>
+                      <span>{videos.length > 1 ? `${videos.length}টি ভিডিও` : 'ভিডিও'}</span>
                     </button>
                   )}
                 </div>
@@ -292,156 +306,198 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
 
       {/* Interactive Comprehensive Hadith & Islamic Ruling Details Modal */}
       <AnimatePresence>
-        {activeDetailRule && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
-            onClick={() => setActiveDetailRule(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-2xl bg-neutral-900 border border-white/20 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 my-8 text-left"
+        {activeDetailRule && (() => {
+          const modalHadiths = getPolicyHadiths(activeDetailRule);
+          const modalVideos = getPolicyYouTubeUrls(activeDetailRule);
+          const pin = getPinDetails(activeDetailRule.pinColor);
+
+          return (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
+              onClick={() => setActiveDetailRule(null)}
             >
-              {/* Modal Top Bar */}
-              <div className="flex items-start justify-between pb-4 border-b border-white/10 gap-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-2xl flex items-center justify-center font-mono font-black text-lg shadow-md border"
-                    style={{
-                      backgroundColor: `${getPinDetails(activeDetailRule.pinColor).accent}20`,
-                      borderColor: getPinDetails(activeDetailRule.pinColor).accent,
-                      color: getPinDetails(activeDetailRule.pinColor).accent,
-                    }}
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-2xl bg-neutral-900 border border-white/20 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 my-8 text-left"
+              >
+                {/* Modal Top Bar */}
+                <div className="flex items-start justify-between pb-4 border-b border-white/10 gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center font-mono font-black text-lg shadow-md border"
+                      style={{
+                        backgroundColor: `${pin.accent}20`,
+                        borderColor: pin.accent,
+                        color: pin.accent,
+                      }}
+                    >
+                      {activeDetailRule.ruleNumber}
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                        ইসলামিক শরীয়াহ ও কাজের নীতিমালা
+                      </span>
+                      <h3 className="font-heading font-black text-xl sm:text-2xl text-white">
+                        {activeDetailRule.title}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setActiveDetailRule(null)}
+                    className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
                   >
-                    {activeDetailRule.ruleNumber}
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
-                      ইসলামিক শরীয়াহ ও কাজের নীতিমালা
-                    </span>
-                    <h3 className="font-heading font-black text-xl sm:text-2xl text-white">
-                      {activeDetailRule.title}
-                    </h3>
-                  </div>
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => setActiveDetailRule(null)}
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Modal Scrollable Body */}
-              <div className="mt-5 space-y-5 max-h-[70vh] overflow-y-auto pr-1">
-                {/* 1. Core Rule Summary */}
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>নীতিমালা সংক্ষিপ্ত রূপ</span>
-                  </h4>
-                  <p className="text-sm text-neutral-200 leading-relaxed font-medium">
-                    {activeDetailRule.description}
-                  </p>
-                </div>
-
-                {/* 2. Hadith / Quranic Proof Callout */}
-                {activeDetailRule.hadithReference && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-neutral-900 to-emerald-950/30 border border-emerald-500/40 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-15">
-                      <BookOpen className="w-20 h-20 text-emerald-400" />
-                    </div>
-                    <div className="relative z-10">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-2.5 border border-emerald-500/30">
-                        <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>হাদিস ও কুরআন শরীফের দলিল</span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-emerald-100 font-serif leading-relaxed italic border-l-2 border-emerald-400 pl-3">
-                        "{activeDetailRule.hadithReference}"
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. Detailed Islamic Explanation (কেন হারাম ও বিস্তারিত বিধান) */}
-                {activeDetailRule.detailedExplanation && (
-                  <div className="p-4 sm:p-5 rounded-2xl bg-neutral-950/60 border border-white/10">
-                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <HelpCircle className="w-4 h-4 text-amber-400" />
-                      <span>কেন হারাম ও বিস্তারিত শরীয়াহ বিধান</span>
+                {/* Modal Scrollable Body */}
+                <div className="mt-5 space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+                  {/* 1. Core Rule Summary */}
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>নীতিমালা সংক্ষিপ্ত রূপ</span>
                     </h4>
-                    <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-normal whitespace-pre-line">
-                      {activeDetailRule.detailedExplanation}
+                    <p className="text-sm text-neutral-200 leading-relaxed font-medium">
+                      {activeDetailRule.description}
                     </p>
                   </div>
-                )}
 
-                {/* 4. Embedded YouTube Reference Player if available */}
-                {activeDetailRule.youtubeUrl && (
-                  <div className="p-4 rounded-2xl bg-black/60 border border-white/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <YouTubeIcon className="w-4 h-4 text-red-500" />
-                        <span>ইসলামিক আলেমদের আলোচনা ও দলিল ভিডিও</span>
+                  {/* 2. Hadith / Quranic Proof Callout (One below another) */}
+                  {modalHadiths.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                        <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>হাদিস ও কুরআন শরীফের দলিল {modalHadiths.length > 1 ? `(${modalHadiths.length}টি)` : ''}</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {modalHadiths.map((hText, hIdx) => (
+                          <div
+                            key={hIdx}
+                            className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-neutral-900 to-emerald-950/30 border border-emerald-500/40 relative overflow-hidden"
+                          >
+                            <div className="absolute top-0 right-0 p-3 opacity-15 pointer-events-none">
+                              <BookOpen className="w-16 h-16 text-emerald-400" />
+                            </div>
+                            <div className="relative z-10">
+                              {modalHadiths.length > 1 && (
+                                <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full mb-2">
+                                  <BookOpen className="w-2.5 h-2.5" />
+                                  <span>দলিল #{hIdx + 1}</span>
+                                </div>
+                              )}
+                              <p className="text-xs sm:text-sm text-emerald-100 font-serif leading-relaxed italic border-l-2 border-emerald-400 pl-3 whitespace-pre-line">
+                                "{hText}"
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. Detailed Islamic Explanation (কেন হারাম ও বিস্তারিত বিধান) */}
+                  {activeDetailRule.detailedExplanation && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-neutral-950/60 border border-white/10">
+                      <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <HelpCircle className="w-4 h-4 text-amber-400" />
+                        <span>কেন হারাম ও বিস্তারিত শরীয়াহ বিধান</span>
                       </h4>
-                      <a
-                        href={activeDetailRule.youtubeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
-                      >
-                        <span>ইউটিউবে খুলুন</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
+                      <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-normal whitespace-pre-line">
+                        {activeDetailRule.detailedExplanation}
+                      </p>
                     </div>
-                    <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-inner">
-                      <iframe
-                        src={`https://www.youtube-nocookie.com/embed/${extractYouTubeId(
-                          activeDetailRule.youtubeUrl
-                        )}?rel=0`}
-                        title={activeDetailRule.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="w-full h-full border-0"
-                      />
+                  )}
+
+                  {/* 4. Embedded YouTube Reference Player(s) if available */}
+                  {modalVideos.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <YouTubeIcon className="w-4 h-4 text-red-500" />
+                          <span>ইসলামিক আলেমদের আলোচনা ও দলিল ভিডিও {modalVideos.length > 1 ? `(${modalVideos.length}টি)` : ''}</span>
+                        </h4>
+                      </div>
+
+                      <div className={`grid ${modalVideos.length > 1 ? 'grid-cols-1 sm:grid-cols-2 gap-4' : 'grid-cols-1'}`}>
+                        {modalVideos.map((vUrl, vIdx) => {
+                          const ytId = extractYouTubeId(vUrl);
+                          return (
+                            <div
+                              key={vIdx}
+                              className="p-3.5 rounded-2xl bg-black/60 border border-white/10 space-y-2 hover:border-white/20 transition-all"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-semibold text-neutral-300 flex items-center gap-1.5">
+                                  <span className="w-4 h-4 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-[10px] font-bold">
+                                    {vIdx + 1}
+                                  </span>
+                                  <span>{modalVideos.length > 1 ? `রেফারেন্স আলোচনা #${vIdx + 1}` : 'রেফারেন্স আলোচনা ও দিকনির্দেশনা'}</span>
+                                </span>
+                                <a
+                                  href={vUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
+                                >
+                                  <span>ইউটিউবে খুলুন</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+
+                              <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-inner">
+                                <iframe
+                                  src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0`}
+                                  title={`${activeDetailRule.title} - Video ${vIdx + 1}`}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="w-full h-full border-0"
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Modal Footer Actions */}
-              <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
-                <a
-                  href={`https://wa.me/15557893210?text=Hi%20AL1%20Studio!%20I%20want%20to%20know%20more%20about%20policy:%20${encodeURIComponent(
-                    activeDetailRule.title
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-black font-bold text-xs flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
-                >
-                  <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>সরাসরি ইনবক্স বা পরামর্শের জন্য যোগাযোগ</span>
-                </a>
-
-                {isAdmin && onOpenAdmin && (
-                  <button
-                    onClick={() => {
-                      setActiveDetailRule(null);
-                      onOpenAdmin();
-                    }}
-                    className="px-3.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                {/* Modal Footer Actions */}
+                <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                  <a
+                    href={`https://wa.me/15557893210?text=Hi%20AL1%20Studio!%20I%20want%20to%20know%20more%20about%20policy:%20${encodeURIComponent(
+                      activeDetailRule.title
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-black font-bold text-xs flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>নীতিমালা এডিট করুন (Admin)</span>
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
+                    <MessageCircle className="w-4 h-4 fill-current" />
+                    <span>সরাসরি ইনবক্স বা পরামর্শের জন্য যোগাযোগ</span>
+                  </a>
+
+                  {isAdmin && onOpenAdmin && (
+                    <button
+                      onClick={() => {
+                        setActiveDetailRule(null);
+                        onOpenAdmin();
+                      }}
+                      className="px-3.5 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>নীতিমালা এডিট করুন (Admin)</span>
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* Standalone Video Modal */}
