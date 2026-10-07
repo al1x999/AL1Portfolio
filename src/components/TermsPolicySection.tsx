@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Info,
   ExternalLink,
@@ -33,9 +33,23 @@ interface TermsPolicySectionProps {
 }
 
 export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAdmin }) => {
-  const { policyRules, policyNotice, isAdmin } = usePortfolio();
+  const { policyRules, policyNotice, isAdmin, pauseBackgroundMusic, resumeBackgroundMusic } = usePortfolio();
   const [activeDetailRule, setActiveDetailRule] = useState<PolicyRule | null>(null);
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null);
+
+  // Pause background music while reference videos are active, resume on close
+  const isAnyPolicyVideoActive = Boolean(
+    videoModalUrl || (activeDetailRule && getPolicyYouTubeUrls(activeDetailRule).length > 0)
+  );
+
+  useEffect(() => {
+    if (isAnyPolicyVideoActive) {
+      pauseBackgroundMusic();
+      return () => {
+        resumeBackgroundMusic();
+      };
+    }
+  }, [isAnyPolicyVideoActive, pauseBackgroundMusic, resumeBackgroundMusic]);
 
   // Sorted rules
   const sortedRules = [...policyRules].sort((a, b) => a.order - b.order);

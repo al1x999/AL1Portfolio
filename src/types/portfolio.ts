@@ -135,3 +135,14 @@ export interface ThemeConfig {
   cursorTrail?: boolean;
 }
 
+export interface BackgroundMusicConfig {
+  enabled: boolean;
+  youtubeUrl: string;
+  title: string;
+  volume: number; // 0 - 100
+  startPoint: number; // in seconds (supports decimals/milliseconds e.g. 57.2)
+  endPoint?: number; // in seconds (0 = full length, supports decimals e.g. 85.4)
+  repeat: boolean;
+  autoPlay: boolean;
+}
+

@@ -13,3 +13,45 @@ export function extractYouTubeId(urlOrId: string): string {
 
   return trimmed;
 }
+
+let ytApiPromise: Promise<void> | null = null;
+
+export function loadYouTubeIframeApi(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.YT && window.YT.Player) return Promise.resolve();
+  if (ytApiPromise) return ytApiPromise;
+
+  ytApiPromise = new Promise<void>((resolve) => {
+    if (window.YT && window.YT.Player) {
+      resolve();
+      return;
+    }
+
+    const SCRIPT_ID = 'youtube-iframe-api-singleton';
+    if (!document.getElementById(SCRIPT_ID)) {
+      const tag = document.createElement('script');
+      tag.id = SCRIPT_ID;
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+
+    const previousOnReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (previousOnReady) {
+        try {
+          previousOnReady();
+        } catch {}
+      }
+      resolve();
+    };
+
+    const interval = setInterval(() => {
+      if (window.YT && window.YT.Player) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 100);
+  });
+
+  return ytApiPromise;
+}

@@ -7,6 +7,7 @@ import type {
   ClientReview,
   PolicyRule,
   ThemeConfig,
+  BackgroundMusicConfig,
 } from '../types/portfolio';
 
 export interface FullPortfolioData {
@@ -19,6 +20,7 @@ export interface FullPortfolioData {
   policyRules: PolicyRule[];
   policyNotice: string;
   theme: ThemeConfig;
+  backgroundMusic?: BackgroundMusicConfig;
   updatedAt?: string;
 }
 

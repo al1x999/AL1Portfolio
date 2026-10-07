@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { VideoProject } from '../types/portfolio';
+import { usePortfolio } from '../context/PortfolioContext';
 
 // Declare global YT interface for TypeScript
 declare global {
@@ -26,6 +27,7 @@ interface VideoModalProps {
 }
 
 export const VideoModal: React.FC<VideoModalProps> = ({ video, onClose }) => {
+  const { pauseBackgroundMusic, resumeBackgroundMusic } = usePortfolio();
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -47,6 +49,16 @@ export const VideoModal: React.FC<VideoModalProps> = ({ video, onClose }) => {
   const isDirectVideo = video?.youtubeUrl
     ? /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(video.youtubeUrl)
     : false;
+
+  // Pause background music while video modal is open, resume on close
+  useEffect(() => {
+    if (video) {
+      pauseBackgroundMusic();
+      return () => {
+        resumeBackgroundMusic();
+      };
+    }
+  }, [video, pauseBackgroundMusic, resumeBackgroundMusic]);
 
   // Format seconds into MM:SS
   const formatTime = (seconds: number): string => {

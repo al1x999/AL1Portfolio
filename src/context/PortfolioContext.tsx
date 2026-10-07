@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import type {
   BrandInfo,
   SoftwareSkill,
@@ -8,6 +8,7 @@ import type {
   ClientReview,
   ThemeConfig,
   PolicyRule,
+  BackgroundMusicConfig,
 } from '../types/portfolio';
 import {
   INITIAL_BRAND,
@@ -19,6 +20,7 @@ import {
   INITIAL_THEME,
   INITIAL_POLICY_RULES,
   INITIAL_POLICY_NOTICE,
+  INITIAL_BACKGROUND_MUSIC,
 } from '../data/initialData';
 import {
   type FullPortfolioData,
@@ -84,10 +86,25 @@ interface PortfolioContextType {
   theme: ThemeConfig;
   updateTheme: (updates: Partial<ThemeConfig>) => void;
 
+  // Background Music & Ambient Sound
+  backgroundMusic: BackgroundMusicConfig;
+  updateBackgroundMusic: (updates: Partial<BackgroundMusicConfig>) => void;
+
   // Lightbox Modal
   activeVideo: VideoProject | null;
   openVideoModal: (video: VideoProject) => void;
   closeVideoModal: () => void;
+
+  // Media Playback Coordination (Background Music vs Portfolio Video)
+  isVideoPlaying: boolean;
+  setIsVideoPlaying: (playing: boolean) => void;
+  pauseBackgroundMusic: () => void;
+  resumeBackgroundMusic: () => void;
+  registerBackgroundMusicControls: (controls: {
+    pause: () => void;
+    resume: () => void;
+    isPlaying: () => boolean;
+  } | null) => void;
 
   // Admin Auth
   isAdmin: boolean;
@@ -121,6 +138,7 @@ const STORAGE_KEYS = {
   POLICY_NOTICE: 'al1_studio_policy_notice_v1',
   THEME: 'al1_studio_theme_v1',
   ADMIN_PASS: 'al1_studio_admin_pass_v1',
+  BACKGROUND_MUSIC: 'al1_studio_bg_music_v1',
 };
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -215,6 +233,28 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   });
 
+  // Background Music state
+  const [backgroundMusic, setBackgroundMusic] = useState<BackgroundMusicConfig>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.BACKGROUND_MUSIC);
+      return saved ? { ...INITIAL_BACKGROUND_MUSIC, ...JSON.parse(saved) } : INITIAL_BACKGROUND_MUSIC;
+    } catch {
+      return INITIAL_BACKGROUND_MUSIC;
+    }
+  });
+
+  const updateBackgroundMusic = (updates: Partial<BackgroundMusicConfig>) => {
+    setBackgroundMusic((prev) => {
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem(STORAGE_KEYS.BACKGROUND_MUSIC, JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
+
   // Admin password & auth state
   const [adminPassword, setAdminPassword] = useState<string>(() => {
     try {
@@ -229,6 +269,37 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Active Lightbox Modal
   const [activeVideo, setActiveVideo] = useState<VideoProject | null>(null);
+
+  // Media Playback Coordination (Background Music vs Portfolio Video)
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
+  const bgControlsRef = useRef<{
+    pause: () => void;
+    resume: () => void;
+    isPlaying: () => boolean;
+  } | null>(null);
+
+  const registerBackgroundMusicControls = useCallback(
+    (controls: { pause: () => void; resume: () => void; isPlaying: () => boolean } | null) => {
+      bgControlsRef.current = controls;
+    },
+    []
+  );
+
+  const pauseBackgroundMusic = useCallback(() => {
+    setIsVideoPlaying(true);
+    if (bgControlsRef.current) {
+      bgControlsRef.current.pause();
+    }
+    window.dispatchEvent(new CustomEvent('al1:pause-bg-music'));
+  }, []);
+
+  const resumeBackgroundMusic = useCallback(() => {
+    setIsVideoPlaying(false);
+    if (bgControlsRef.current) {
+      bgControlsRef.current.resume();
+    }
+    window.dispatchEvent(new CustomEvent('al1:resume-bg-music'));
+  }, []);
 
   // Cloud Database & Multi-Browser Sync state
   const [cloudConfig, setCloudConfig] = useState<CloudSyncConfig>(() => loadCloudConfig());
@@ -583,11 +654,13 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Lightbox
   const openVideoModal = (video: VideoProject) => {
+    pauseBackgroundMusic();
     setActiveVideo(video);
   };
 
   const closeVideoModal = () => {
     setActiveVideo(null);
+    resumeBackgroundMusic();
   };
 
   // Admin Auth
@@ -626,6 +699,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       policyRules,
       policyNotice,
       theme,
+      backgroundMusic,
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -677,6 +751,10 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setTheme(parsed.theme);
         localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(parsed.theme));
       }
+      if (parsed.backgroundMusic) {
+        setBackgroundMusic((prev) => ({ ...prev, ...parsed.backgroundMusic }));
+        localStorage.setItem(STORAGE_KEYS.BACKGROUND_MUSIC, JSON.stringify(parsed.backgroundMusic));
+      }
     } catch (e) {
       console.error('Failed to apply data:', e);
     }
@@ -703,6 +781,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setPolicyRules(INITIAL_POLICY_RULES);
     setPolicyNotice(INITIAL_POLICY_NOTICE);
     setTheme(INITIAL_THEME);
+    setBackgroundMusic(INITIAL_BACKGROUND_MUSIC);
     localStorage.removeItem(STORAGE_KEYS.BRAND);
     localStorage.removeItem(STORAGE_KEYS.SKILLS);
     localStorage.removeItem(STORAGE_KEYS.VIDEOS);
@@ -712,6 +791,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem(STORAGE_KEYS.POLICY_RULES);
     localStorage.removeItem(STORAGE_KEYS.POLICY_NOTICE);
     localStorage.removeItem(STORAGE_KEYS.THEME);
+    localStorage.removeItem(STORAGE_KEYS.BACKGROUND_MUSIC);
   };
 
   // Update Cloud Sync Config
@@ -737,6 +817,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       policyRules,
       policyNotice,
       theme,
+      backgroundMusic,
     };
     const res = await saveToCloud(cloudConfig, payload);
     if (res.success) {
@@ -831,6 +912,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         policyRules,
         policyNotice,
         theme,
+        backgroundMusic,
       };
       const res = await saveToCloud(cloudConfig, payload);
       if (res.success) {
@@ -846,7 +928,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     };
-  }, [brand, skills, videos, categories, links, reviews, policyRules, policyNotice, theme]);
+  }, [brand, skills, videos, categories, links, reviews, policyRules, policyNotice, theme, backgroundMusic]);
 
   return (
     <PortfolioContext.Provider
@@ -889,9 +971,16 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updatePolicyNotice,
         theme,
         updateTheme,
+        backgroundMusic,
+        updateBackgroundMusic,
         activeVideo,
         openVideoModal,
         closeVideoModal,
+        isVideoPlaying,
+        setIsVideoPlaying,
+        pauseBackgroundMusic,
+        resumeBackgroundMusic,
+        registerBackgroundMusicControls,
         isAdmin,
         loginAdmin,
         logoutAdmin,

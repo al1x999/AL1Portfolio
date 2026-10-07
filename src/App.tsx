@@ -12,6 +12,7 @@ import { Footer } from './components/Footer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { VideoModal } from './components/VideoModal';
 import { AdminModal } from './components/admin/AdminModal';
+import { BackgroundMusicPlayer } from './components/BackgroundMusicPlayer';
 import { Shield, LogOut } from 'lucide-react';
 
 const PortfolioContent: React.FC = () => {
@@ -78,6 +79,9 @@ const PortfolioContent: React.FC = () => {
 
       {/* YouTube Lightbox Modal */}
       <VideoModal video={activeVideo} onClose={closeVideoModal} />
+
+      {/* Dynamic Background Music Player */}
+      <BackgroundMusicPlayer />
 
       {/* Simplified AL1 Studio Admin Dashboard */}
       <AdminModal isOpen={isAdminOpen} onClose={() => setIsAdminOpen(false)} />

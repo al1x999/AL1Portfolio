@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Play,
   Filter,
@@ -6,10 +6,10 @@ import {
   Tv,
   Smartphone,
   Sparkles,
-  X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../context/PortfolioContext';
+import { InlineVideoPlayer } from './InlineVideoPlayer';
 import type { VideoProject } from '../types/portfolio';
 
 interface VideoShowcaseProps {
@@ -17,9 +17,49 @@ interface VideoShowcaseProps {
 }
 
 export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => {
-  const { videos, categories, isAdmin } = usePortfolio();
+  const { videos, categories, isAdmin, openVideoModal, pauseBackgroundMusic, resumeBackgroundMusic } = usePortfolio();
   const [activeFilter, setActiveFilter] = useState<'all' | 'landscape' | 'reels' | string>('all');
   const [inlinePlayingId, setInlinePlayingId] = useState<string | null>(null);
+
+  const handlePlayVideo = (videoId: string) => {
+    pauseBackgroundMusic();
+    setInlinePlayingId(videoId);
+  };
+
+  const handleVideoEnded = () => {
+    setInlinePlayingId(null);
+    resumeBackgroundMusic();
+  };
+
+  const handleCloseVideo = () => {
+    setInlinePlayingId(null);
+    resumeBackgroundMusic();
+  };
+
+  const handleExpandToModal = (video: VideoProject) => {
+    setInlinePlayingId(null);
+    openVideoModal(video);
+  };
+
+  const inlinePlayingRef = useRef<string | null>(null);
+  inlinePlayingRef.current = inlinePlayingId;
+
+  // Only resume background music if the entire VideoShowcase unmounts while video was active
+  useEffect(() => {
+    return () => {
+      if (inlinePlayingRef.current) {
+        resumeBackgroundMusic();
+      }
+    };
+  }, [resumeBackgroundMusic]);
+
+  const handleFilterChange = (filter: string) => {
+    if (inlinePlayingId) {
+      setInlinePlayingId(null);
+      resumeBackgroundMusic();
+    }
+    setActiveFilter(filter);
+  };
 
   // Separate videos by aspect ratio
   const longVideos = videos
@@ -88,7 +128,7 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
       {/* Category Filter Pills */}
       <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-10 no-scrollbar">
         <button
-          onClick={() => setActiveFilter('all')}
+          onClick={() => handleFilterChange('all')}
           className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all focus:outline-none cursor-pointer ${
             activeFilter === 'all'
               ? 'border-white text-black font-bold shadow-lg'
@@ -110,7 +150,7 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
         </button>
 
         <button
-          onClick={() => setActiveFilter('landscape')}
+          onClick={() => handleFilterChange('landscape')}
           className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all focus:outline-none cursor-pointer ${
             activeFilter === 'landscape'
               ? 'border-white text-black font-bold shadow-lg'
@@ -133,7 +173,7 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
         </button>
 
         <button
-          onClick={() => setActiveFilter('reels')}
+          onClick={() => handleFilterChange('reels')}
           className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all focus:outline-none cursor-pointer ${
             activeFilter === 'reels'
               ? 'border-white text-black font-bold shadow-lg'
@@ -166,7 +206,7 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
             return (
               <button
                 key={cat.id}
-                onClick={() => setActiveFilter(cat.slug)}
+                onClick={() => handleFilterChange(cat.slug)}
                 className={`whitespace-nowrap px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all focus:outline-none cursor-pointer ${
                   isActive
                     ? 'border-white text-black font-bold shadow-lg'
@@ -207,7 +247,6 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
             <AnimatePresence>
               {visibleLongVideos.map((video) => {
                 const isPlaying = inlinePlayingId === video.id;
-                const isDirect = video.youtubeUrl && /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(video.youtubeUrl);
 
                 return (
                   <motion.div
@@ -218,7 +257,7 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.3 }}
                     onClick={() => {
-                      if (!isPlaying) setInlinePlayingId(video.id);
+                      if (!isPlaying) handlePlayVideo(video.id);
                     }}
                     className={`group relative rounded-2xl overflow-hidden shadow-2xl border transition-all duration-300 bg-neutral-950 ${
                       isPlaying
@@ -229,37 +268,12 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
                     {/* 16:9 Aspect Container */}
                     <div className="relative w-full aspect-video overflow-hidden bg-black">
                       {isPlaying ? (
-                        <>
-                          {isDirect ? (
-                            <video
-                              src={video.youtubeUrl}
-                              autoPlay
-                              controls
-                              playsInline
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <iframe
-                              src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&vq=hd1080`}
-                              title={video.title}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                              className="w-full h-full border-0"
-                            />
-                          )}
-
-                          {/* Close / Return to Thumbnail Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInlinePlayingId(null);
-                            }}
-                            className="absolute top-2.5 right-2.5 z-20 w-7 h-7 rounded-full bg-black/80 hover:bg-black text-white/90 hover:text-white flex items-center justify-center border border-white/20 transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
-                            title="Close Video"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </>
+                        <InlineVideoPlayer
+                          video={video}
+                          onEnded={handleVideoEnded}
+                          onClose={handleCloseVideo}
+                          onExpand={() => handleExpandToModal(video)}
+                        />
                       ) : (
                         <>
                           <img
@@ -330,7 +344,6 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
             <AnimatePresence>
               {visibleShortVideos.map((video) => {
                 const isPlaying = inlinePlayingId === video.id;
-                const isDirect = video.youtubeUrl && /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(video.youtubeUrl);
 
                 return (
                   <motion.div
@@ -341,7 +354,7 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.3 }}
                     onClick={() => {
-                      if (!isPlaying) setInlinePlayingId(video.id);
+                      if (!isPlaying) handlePlayVideo(video.id);
                     }}
                     className={`group relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border transition-all duration-300 bg-neutral-950 ${
                       isPlaying
@@ -352,37 +365,12 @@ export const VideoShowcase: React.FC<VideoShowcaseProps> = ({ onOpenAdmin }) => 
                     {/* Clean 9:16 Aspect Reel Container */}
                     <div className="relative w-full aspect-[9/16] overflow-hidden bg-black">
                       {isPlaying ? (
-                        <>
-                          {isDirect ? (
-                            <video
-                              src={video.youtubeUrl}
-                              autoPlay
-                              controls
-                              playsInline
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <iframe
-                              src={`https://www.youtube-nocookie.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&vq=hd1080`}
-                              title={video.title}
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                              className="w-full h-full border-0"
-                            />
-                          )}
-
-                          {/* Close / Return to Thumbnail Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInlinePlayingId(null);
-                            }}
-                            className="absolute top-2.5 right-2.5 z-20 w-7 h-7 rounded-full bg-black/80 hover:bg-black text-white/90 hover:text-white flex items-center justify-center border border-white/20 transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
-                            title="Close Video"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </>
+                        <InlineVideoPlayer
+                          video={video}
+                          onEnded={handleVideoEnded}
+                          onClose={handleCloseVideo}
+                          onExpand={() => handleExpandToModal(video)}
+                        />
                       ) : (
                         <>
                           <img

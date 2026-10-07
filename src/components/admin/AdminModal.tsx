@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Lock,
@@ -38,6 +38,9 @@ import {
   Copy,
   ExternalLink,
   Database,
+  Music,
+  Volume2,
+  Repeat,
 } from 'lucide-react';
 import { usePortfolio } from '../../context/PortfolioContext';
 import { generateInitialDataTs } from '../../services/cloudSync';
@@ -51,6 +54,7 @@ import type {
   LinkIconType,
   PolicyRule,
   PinColor,
+  BackgroundMusicConfig,
 } from '../../types/portfolio';
 import { getPolicyHadiths, getPolicyYouTubeUrls } from '../../types/portfolio';
 
@@ -201,7 +205,7 @@ interface AdminModalProps {
   onClose: () => void;
 }
 
-type AdminTab = 'videos' | 'policy' | 'categories' | 'links' | 'reviews' | 'skills' | 'settings';
+type AdminTab = 'videos' | 'policy' | 'music' | 'categories' | 'links' | 'reviews' | 'skills' | 'settings';
 
 export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
   const {
@@ -243,6 +247,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     updatePolicyNotice,
     theme,
     updateTheme,
+    backgroundMusic,
+    updateBackgroundMusic,
     isAdmin,
     loginAdmin,
     logoutAdmin,
@@ -260,6 +266,32 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
   } = usePortfolio();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('videos');
+
+  // Background Music state
+  const [musicForm, setMusicForm] = useState<BackgroundMusicConfig>(() => ({ ...backgroundMusic }));
+  const [musicSaved, setMusicSaved] = useState(false);
+
+  useEffect(() => {
+    if (backgroundMusic) {
+      setMusicForm({ ...backgroundMusic });
+    }
+  }, [backgroundMusic]);
+
+  const handleSaveMusic = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateBackgroundMusic({
+      enabled: Boolean(musicForm.enabled),
+      youtubeUrl: musicForm.youtubeUrl.trim(),
+      title: musicForm.title.trim() || 'Background Audio',
+      volume: Number(musicForm.volume) ?? 40,
+      startPoint: Math.max(0, parseFloat(String(musicForm.startPoint)) || 0),
+      endPoint: Math.max(0, parseFloat(String(musicForm.endPoint)) || 0),
+      repeat: Boolean(musicForm.repeat),
+      autoPlay: Boolean(musicForm.autoPlay),
+    });
+    setMusicSaved(true);
+    setTimeout(() => setMusicSaved(false), 3000);
+  };
 
   // Auth form state
   const [passInput, setPassInput] = useState('');
@@ -1109,6 +1141,27 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 font-mono">
                   {policyRules.length}
                 </span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('music')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+                  activeTab === 'music'
+                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Music className="w-3.5 h-3.5 text-purple-400" />
+                <span>Background Music</span>
+                {backgroundMusic.enabled ? (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-400 font-mono">
+                    {backgroundMusic.volume}%
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 font-mono text-neutral-400">
+                    Off
+                  </span>
+                )}
               </button>
 
               <button
@@ -2042,6 +2095,254 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                     );
                   })}
                   </div>
+                </div>
+              )}
+
+              {/* TAB: BACKGROUND MUSIC (ব্যাকগ্রাউন্ড অডিও ইঞ্জিন) */}
+              {activeTab === 'music' && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/10">
+                    <div>
+                      <h3 className="font-heading font-bold text-lg text-white flex items-center gap-2">
+                        <Music className="w-5 h-5 text-purple-400" />
+                        <span>Background Music & Ambient Sound</span>
+                      </h3>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        ওয়েবসাইট ওপেন করলে ব্যাকগ্রাউন্ডে ইউটিউব থেকে হালকা সাউন্ড/মিউজিক অটো প্লে হবে। ক্লায়েন্ট বা ভিজিটররা নিচ থেকে কন্ট্রোল করতে পারবে।
+                      </p>
+                    </div>
+
+                    {musicSaved && (
+                      <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto animate-fade-in">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>সেটিংস সংরক্ষিত হয়েছে!</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Current Active Preview Card */}
+                  <div className="p-4 rounded-2xl glass-card border border-purple-500/30 bg-purple-950/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      {extractYouTubeId(musicForm.youtubeUrl) ? (
+                        <div className="relative w-20 h-14 rounded-xl overflow-hidden shrink-0 border border-white/20 bg-black">
+                          <img
+                            src={`https://img.youtube.com/vi/${extractYouTubeId(musicForm.youtubeUrl)}/mqdefault.jpg`}
+                            alt="YouTube Thumbnail"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <Play className="w-4 h-4 fill-white text-white opacity-80" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
+                          <Music className="w-6 h-6 text-purple-400" />
+                        </div>
+                      )}
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              musicForm.enabled ? 'bg-emerald-400 animate-ping' : 'bg-neutral-500'
+                            }`}
+                          />
+                          <h4 className="font-heading font-bold text-sm text-white">
+                            {musicForm.title || 'Atmospheric Background Audio'}
+                          </h4>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            {musicForm.volume}% Sound
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-400 mt-1 font-mono line-clamp-1">
+                          {musicForm.youtubeUrl || 'কোনো ইউটিউব লিংক দেওয়া নেই'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {musicForm.youtubeUrl && (
+                        <a
+                          href={musicForm.youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-xl glass-panel border border-white/10 hover:border-purple-400 text-xs font-semibold text-neutral-300 hover:text-white flex items-center gap-1.5 transition-all"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>YouTube এ শুনুন</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Settings Form */}
+                  <form onSubmit={handleSaveMusic} className="p-5 rounded-2xl glass-card border border-white/15 space-y-5">
+                    {/* Enable Toggle Switch */}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                      <div>
+                        <label className="text-sm font-bold text-white block">
+                          ব্যাকগ্রাউন্ড মিউজিক সক্রিয় রাখুন (Enable Background Music)
+                        </label>
+                        <p className="text-xs text-neutral-400">
+                          অন রাখলে সাইটের নিচে মিনি প্লেয়ার প্রদর্শিত হবে এবং ভিজিটরদের অডিও শোনানো হবে।
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={musicForm.enabled}
+                          onChange={(e) => setMusicForm({ ...musicForm, enabled: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      </label>
+                    </div>
+
+                    {/* YouTube URL */}
+                    <div>
+                      <label className="block text-neutral-300 font-semibold mb-1 text-xs flex items-center gap-1.5">
+                        <YouTubeIcon className="w-3.5 h-3.5 text-red-500" />
+                        <span>ইউটিউব ভিডিও / মিউজিক লিংক (YouTube URL) *</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={musicForm.youtubeUrl}
+                        onChange={(e) => setMusicForm({ ...musicForm, youtubeUrl: e.target.value })}
+                        placeholder="যেমন: https://www.youtube.com/watch?v=HNvpASy9m5s"
+                        className="w-full px-3.5 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-400 font-mono"
+                      />
+                      <span className="text-[11px] text-neutral-400 mt-1 block">
+                        নোট: যেকোনো ফুল ভিডিও, শর্টস বা মিউজিক ট্র্যাক লিংক দিতে পারেন।
+                      </span>
+                    </div>
+
+                    {/* Track Title */}
+                    <div>
+                      <label className="block text-neutral-300 font-semibold mb-1 text-xs flex items-center gap-1.5">
+                        <Music className="w-3.5 h-3.5 text-purple-400" />
+                        <span>অডিও বা ট্র্যাকের নাম (Audio Title)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={musicForm.title}
+                        onChange={(e) => setMusicForm({ ...musicForm, title: e.target.value })}
+                        placeholder="যেমন: Atmospheric Background Audio বা Peaceful Nasheed..."
+                        className="w-full px-3.5 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+
+                    {/* Volume Slider */}
+                    <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-neutral-200 flex items-center gap-1.5">
+                          <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>ডিফল্ট সাউন্ড ভলিউম (Default Volume):</span>
+                        </label>
+                        <span className="px-2 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold font-mono">
+                          {musicForm.volume}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={musicForm.volume}
+                        onChange={(e) => setMusicForm({ ...musicForm, volume: Number(e.target.value) })}
+                        className="w-full h-2 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                      />
+                      <div className="flex justify-between text-[10px] text-neutral-500">
+                        <span>0% (নীরব)</span>
+                        <span>40% (সুপারিশকৃত মৃদু ভলিউম)</span>
+                        <span>100% (সর্বোচ্চ)</span>
+                      </div>
+                    </div>
+
+                    {/* Start & End Points (Timing) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-neutral-300 font-semibold mb-1 text-xs">
+                          শুরুর পয়েন্ট (Start Point / In-Point)
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          value={musicForm.startPoint ?? ''}
+                          onChange={(e) => setMusicForm({ ...musicForm, startPoint: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
+                          placeholder="যেমন: 57.2 বা 0"
+                          className="w-full px-3.5 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-400 font-mono"
+                        />
+                        <span className="text-[10px] text-neutral-500 mt-1 block">
+                          দশমিক সেকেন্ড বা মিলিসেকেন্ড সহ দিন (যেমন: 57.2, 12.5 বা ০ দিলে প্রথম থেকে)
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-neutral-300 font-semibold mb-1 text-xs">
+                          শেষ পয়েন্ট (End Point / Out-Point)
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          value={musicForm.endPoint ?? ''}
+                          onChange={(e) => setMusicForm({ ...musicForm, endPoint: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
+                          placeholder="যেমন: 85.4 বা 0"
+                          className="w-full px-3.5 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-purple-400 font-mono"
+                        />
+                        <span className="text-[10px] text-neutral-500 mt-1 block">
+                          নির্দিষ্ট দশমিক সেকেন্ডে শেষ করে লুপ করতে চাইলে দিন (যেমন: 85.4 বা ০ দিলে পুরো ভিডিও)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Checkboxes: Repeat and Autoplay */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <label className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={musicForm.repeat}
+                          onChange={(e) => setMusicForm({ ...musicForm, repeat: e.target.checked })}
+                          className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 accent-purple-600"
+                        />
+                        <div className="text-xs">
+                          <span className="font-semibold text-white block flex items-center gap-1">
+                            <Repeat className="w-3 h-3 text-emerald-400" />
+                            অটোমেটিক রিপিট (Infinite Loop)
+                          </span>
+                          <span className="text-neutral-400 text-[11px]">গান শেষ হলে পুনরায় প্রথম থেকে চলবে</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={musicForm.autoPlay}
+                          onChange={(e) => setMusicForm({ ...musicForm, autoPlay: e.target.checked })}
+                          className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 accent-purple-600"
+                        />
+                        <div className="text-xs">
+                          <span className="font-semibold text-white block flex items-center gap-1">
+                            <Play className="w-3 h-3 text-cyan-400" />
+                            স্বয়ংক্রিয় প্লে (Autoplay on Visit)
+                          </span>
+                          <span className="text-neutral-400 text-[11px]">ওয়েবসাইটে প্রবেশ করলেই সাউন্ড শুরু হবে</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex justify-end pt-3 border-t border-white/10">
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-purple-600/30 transition-all cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Save & Sync Music Settings</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
               )}
 
