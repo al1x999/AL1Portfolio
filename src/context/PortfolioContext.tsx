@@ -9,6 +9,7 @@ import type {
   ThemeConfig,
   PolicyRule,
   BackgroundMusicConfig,
+  IntroScreenConfig,
 } from '../types/portfolio';
 import {
   INITIAL_BRAND,
@@ -21,6 +22,7 @@ import {
   INITIAL_POLICY_RULES,
   INITIAL_POLICY_NOTICE,
   INITIAL_BACKGROUND_MUSIC,
+  INITIAL_INTRO_CONFIG,
 } from '../data/initialData';
 import {
   type FullPortfolioData,
@@ -90,6 +92,10 @@ interface PortfolioContextType {
   backgroundMusic: BackgroundMusicConfig;
   updateBackgroundMusic: (updates: Partial<BackgroundMusicConfig>) => void;
 
+  // Intro Screen
+  introConfig: IntroScreenConfig;
+  updateIntroConfig: (updates: Partial<IntroScreenConfig>) => void;
+
   // Lightbox Modal
   activeVideo: VideoProject | null;
   openVideoModal: (video: VideoProject) => void;
@@ -100,6 +106,7 @@ interface PortfolioContextType {
   setIsVideoPlaying: (playing: boolean) => void;
   pauseBackgroundMusic: () => void;
   resumeBackgroundMusic: () => void;
+  startBackgroundMusic: () => void;
   registerBackgroundMusicControls: (controls: {
     pause: () => void;
     resume: () => void;
@@ -139,6 +146,7 @@ const STORAGE_KEYS = {
   THEME: 'al1_studio_theme_v1',
   ADMIN_PASS: 'al1_studio_admin_pass_v1',
   BACKGROUND_MUSIC: 'al1_studio_bg_music_v1',
+  INTRO: 'al1_studio_intro_v1',
 };
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
@@ -255,6 +263,28 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
 
+  // Intro Screen state
+  const [introConfig, setIntroConfig] = useState<IntroScreenConfig>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.INTRO);
+      return saved ? { ...INITIAL_INTRO_CONFIG, ...JSON.parse(saved) } : INITIAL_INTRO_CONFIG;
+    } catch {
+      return INITIAL_INTRO_CONFIG;
+    }
+  });
+
+  const updateIntroConfig = (updates: Partial<IntroScreenConfig>) => {
+    setIntroConfig((prev) => {
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem(STORAGE_KEYS.INTRO, JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
+
   // Admin password & auth state
   const [adminPassword, setAdminPassword] = useState<string>(() => {
     try {
@@ -299,6 +329,23 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       bgControlsRef.current.resume();
     }
     window.dispatchEvent(new CustomEvent('al1:resume-bg-music'));
+  }, []);
+
+  const startBackgroundMusic = useCallback(() => {
+    (window as any).__al1UserInteracted = true;
+    if (bgControlsRef.current) {
+      if (typeof (bgControlsRef.current as any).play === 'function') {
+        (bgControlsRef.current as any).play();
+      } else {
+        bgControlsRef.current.resume();
+      }
+    }
+    window.dispatchEvent(new CustomEvent('al1:start-music'));
+    if (typeof (window as any).__unlockBgAudio === 'function') {
+      try {
+        (window as any).__unlockBgAudio();
+      } catch {}
+    }
   }, []);
 
   // Cloud Database & Multi-Browser Sync state
@@ -700,6 +747,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       policyNotice,
       theme,
       backgroundMusic,
+      introConfig,
       exportedAt: new Date().toISOString(),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -755,6 +803,10 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setBackgroundMusic((prev) => ({ ...prev, ...parsed.backgroundMusic }));
         localStorage.setItem(STORAGE_KEYS.BACKGROUND_MUSIC, JSON.stringify(parsed.backgroundMusic));
       }
+      if (parsed.introConfig) {
+        setIntroConfig((prev) => ({ ...prev, ...parsed.introConfig }));
+        localStorage.setItem(STORAGE_KEYS.INTRO, JSON.stringify(parsed.introConfig));
+      }
     } catch (e) {
       console.error('Failed to apply data:', e);
     }
@@ -782,6 +834,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setPolicyNotice(INITIAL_POLICY_NOTICE);
     setTheme(INITIAL_THEME);
     setBackgroundMusic(INITIAL_BACKGROUND_MUSIC);
+    setIntroConfig(INITIAL_INTRO_CONFIG);
     localStorage.removeItem(STORAGE_KEYS.BRAND);
     localStorage.removeItem(STORAGE_KEYS.SKILLS);
     localStorage.removeItem(STORAGE_KEYS.VIDEOS);
@@ -792,6 +845,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     localStorage.removeItem(STORAGE_KEYS.POLICY_NOTICE);
     localStorage.removeItem(STORAGE_KEYS.THEME);
     localStorage.removeItem(STORAGE_KEYS.BACKGROUND_MUSIC);
+    localStorage.removeItem(STORAGE_KEYS.INTRO);
   };
 
   // Update Cloud Sync Config
@@ -973,6 +1027,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateTheme,
         backgroundMusic,
         updateBackgroundMusic,
+        introConfig,
+        updateIntroConfig,
         activeVideo,
         openVideoModal,
         closeVideoModal,
@@ -980,6 +1036,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setIsVideoPlaying,
         pauseBackgroundMusic,
         resumeBackgroundMusic,
+        startBackgroundMusic,
         registerBackgroundMusicControls,
         isAdmin,
         loginAdmin,

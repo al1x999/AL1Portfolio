@@ -11,6 +11,7 @@ import {
 import { motion } from 'framer-motion';
 import { usePortfolio } from '../context/PortfolioContext';
 import type { HubLink, LinkIconType } from '../types/portfolio';
+import { sanitizeUrl } from '../utils/security';
 
 interface SocialLinkHubProps {
   onOpenAdmin?: () => void;
@@ -177,9 +178,9 @@ export const SocialLinkHub: React.FC<SocialLinkHubProps> = ({ onOpenAdmin }) => 
         {activeLinks.map((link, idx) => (
           <motion.a
             key={link.id}
-            href={link.url}
+            href={sanitizeUrl(link.url)}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: idx * 0.05 }}

@@ -5,7 +5,7 @@ import { Play, Pause, Volume2, VolumeX, Music, ExternalLink, ChevronDown } from 
 
 export const BackgroundMusicPlayer: React.FC = () => {
   const { backgroundMusic, isVideoPlaying, registerBackgroundMusicControls } = usePortfolio();
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false); // Do NOT play by default until user clicks!
   const [isMuted, setIsMuted] = useState(false);
   const [needsInteraction, setNeedsInteraction] = useState(false);
   const [currentVolume, setCurrentVolume] = useState<number>(backgroundMusic?.volume ?? 40);
@@ -16,6 +16,10 @@ export const BackgroundMusicPlayer: React.FC = () => {
   const endPointCheckRef = useRef<any>(null);
   const wasPlayingBeforeVideoRef = useRef<boolean>(false);
   const isVideoPlayingRef = useRef<boolean>(isVideoPlaying);
+  const isUserExplicitlyMutedRef = useRef<boolean>(false);
+  const isUserExplicitlyPausedRef = useRef<boolean>(false);
+  const hasUserInteractedRef = useRef<boolean>(false);
+  const currentVolumeRef = useRef<number>(backgroundMusic?.volume ?? 40);
 
   useEffect(() => {
     isVideoPlayingRef.current = isVideoPlaying;
@@ -27,18 +31,25 @@ export const BackgroundMusicPlayer: React.FC = () => {
   useEffect(() => {
     if (backgroundMusic?.volume !== undefined) {
       setCurrentVolume(backgroundMusic.volume);
+      currentVolumeRef.current = backgroundMusic.volume;
       if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
-        playerRef.current.setVolume(backgroundMusic.volume);
+        try {
+          playerRef.current.setVolume(backgroundMusic.volume);
+        } catch {}
       }
     }
   }, [backgroundMusic?.volume]);
 
-  // Audio unlock function (unmute & ensure playback)
+  // Audio start & unlock function (only runs on user click)
   const unlockAudio = useCallback(() => {
     if (isVideoPlayingRef.current) return;
-    if (!playerRef.current) return;
+    (window as any).__al1UserInteracted = true;
+    hasUserInteractedRef.current = true;
+    isUserExplicitlyPausedRef.current = false;
+    isUserExplicitlyMutedRef.current = false;
+
     try {
-      // Resume WebAudio context if present
+      // 1. Resume WebAudio context if present
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
         const ctx = new AudioCtx();
@@ -47,23 +58,27 @@ export const BackgroundMusicPlayer: React.FC = () => {
         }
       }
 
-      if (typeof playerRef.current.unMute === 'function') {
-        playerRef.current.unMute();
-      }
-      if (typeof playerRef.current.setVolume === 'function') {
-        playerRef.current.setVolume(currentVolume);
-      }
-      if (typeof playerRef.current.playVideo === 'function') {
-        playerRef.current.playVideo();
-      }
+      // 2. Play YouTube player unmuted
+      if (playerRef.current) {
+        const vol = currentVolumeRef.current > 0 ? currentVolumeRef.current : 40;
+        if (typeof playerRef.current.unMute === 'function') {
+          playerRef.current.unMute();
+        }
+        if (typeof playerRef.current.setVolume === 'function') {
+          playerRef.current.setVolume(vol);
+        }
+        if (typeof playerRef.current.playVideo === 'function') {
+          playerRef.current.playVideo();
+        }
 
-      setIsPlaying(true);
-      setIsMuted(false);
-      setNeedsInteraction(false);
+        setIsPlaying(true);
+        setIsMuted(false);
+        setNeedsInteraction(false);
+      }
     } catch (e) {
       console.warn('Unlock audio attempt:', e);
     }
-  }, [currentVolume]);
+  }, []);
 
   // Synchronous pause and resume handlers for video events
   const pauseBgMusic = useCallback(() => {
@@ -91,6 +106,9 @@ export const BackgroundMusicPlayer: React.FC = () => {
       wasPlayingBeforeVideoRef.current = false;
       if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
         try {
+          if (!isUserExplicitlyMutedRef.current && typeof playerRef.current.unMute === 'function') {
+            playerRef.current.unMute();
+          }
           playerRef.current.playVideo();
           setIsPlaying(true);
         } catch (e) {
@@ -103,6 +121,12 @@ export const BackgroundMusicPlayer: React.FC = () => {
   // Register controls with PortfolioContext
   useEffect(() => {
     registerBackgroundMusicControls({
+      play: () => {
+        wasPlayingBeforeVideoRef.current = true;
+        isUserExplicitlyPausedRef.current = false;
+        isUserExplicitlyMutedRef.current = false;
+        unlockAudio();
+      },
       pause: pauseBgMusic,
       resume: resumeBgMusic,
       isPlaying: () => {
@@ -113,11 +137,11 @@ export const BackgroundMusicPlayer: React.FC = () => {
           return false;
         }
       },
-    });
+    } as any);
     return () => {
       registerBackgroundMusicControls(null);
     };
-  }, [registerBackgroundMusicControls, pauseBgMusic, resumeBgMusic]);
+  }, [registerBackgroundMusicControls, pauseBgMusic, resumeBgMusic, unlockAudio]);
 
   // Window event listeners for immediate fallback
   useEffect(() => {
@@ -133,6 +157,23 @@ export const BackgroundMusicPlayer: React.FC = () => {
     };
   }, [pauseBgMusic, resumeBgMusic]);
 
+  // Handle immediate intro enter event (triggered when user clicks to enter the site)
+  useEffect(() => {
+    const handleStartAudio = () => {
+      wasPlayingBeforeVideoRef.current = true;
+      isUserExplicitlyPausedRef.current = false;
+      isUserExplicitlyMutedRef.current = false;
+      unlockAudio();
+    };
+    (window as any).__unlockBgAudio = handleStartAudio;
+    window.addEventListener('al1:start-music', handleStartAudio);
+
+    return () => {
+      window.removeEventListener('al1:start-music', handleStartAudio);
+      delete (window as any).__unlockBgAudio;
+    };
+  }, [unlockAudio]);
+
   // Respond ONLY to changes in isVideoPlaying transition (false -> true or true -> false)
   const prevIsVideoPlayingRef = useRef(false);
   useEffect(() => {
@@ -144,36 +185,42 @@ export const BackgroundMusicPlayer: React.FC = () => {
     prevIsVideoPlayingRef.current = isVideoPlaying;
   }, [isVideoPlaying, pauseBgMusic, resumeBgMusic]);
 
-  // One-time interaction unlock listener on initial page load only
-  const initialUnlockedRef = useRef(false);
+  // Global user click listener: only triggers on initial user interaction
   useEffect(() => {
-    if (!backgroundMusic?.enabled || !backgroundMusic?.autoPlay) return;
+    if (!backgroundMusic?.enabled) return;
 
-    const handleInitialUnlock = () => {
-      if (initialUnlockedRef.current) return;
-      if (isVideoPlayingRef.current) return;
+    const handleInitialClick = () => {
+      (window as any).__al1UserInteracted = true;
+      hasUserInteractedRef.current = true;
 
-      initialUnlockedRef.current = true;
+      // If user paused explicitly or video modal is active, do not force-play
+      if (isUserExplicitlyPausedRef.current || isVideoPlayingRef.current) {
+        return;
+      }
+
+      // If player is already playing, do nothing
+      if (playerRef.current) {
+        try {
+          if (playerRef.current.getPlayerState() === 1) {
+            return;
+          }
+        } catch {}
+      }
+
+      // Start audio playback on this click
       unlockAudio();
-      removeListeners();
     };
 
-    const removeListeners = () => {
-      window.removeEventListener('click', handleInitialUnlock);
-      window.removeEventListener('touchstart', handleInitialUnlock);
-      window.removeEventListener('keydown', handleInitialUnlock);
-    };
-
-    window.addEventListener('click', handleInitialUnlock, { passive: true });
-    window.addEventListener('touchstart', handleInitialUnlock, { passive: true });
-    window.addEventListener('keydown', handleInitialUnlock, { passive: true });
+    window.addEventListener('click', handleInitialClick, { passive: true });
+    window.addEventListener('touchstart', handleInitialClick, { passive: true });
 
     return () => {
-      removeListeners();
+      window.removeEventListener('click', handleInitialClick);
+      window.removeEventListener('touchstart', handleInitialClick);
     };
-  }, [backgroundMusic?.enabled, backgroundMusic?.autoPlay, unlockAudio]);
+  }, [backgroundMusic?.enabled, unlockAudio]);
 
-  // Initialize YouTube Iframe Player
+  // Initialize YouTube Iframe Player (LOADED BUT NOT PLAYING UNTIL CLICK)
   useEffect(() => {
     if (!backgroundMusic?.enabled || !videoId) {
       if (playerRef.current && typeof playerRef.current.destroy === 'function') {
@@ -202,15 +249,15 @@ export const BackgroundMusicPlayer: React.FC = () => {
       containerRef.current.innerHTML = '<div id="yt-bg-audio-slot"></div>';
 
       try {
-        const targetVol = backgroundMusic.volume ?? 40;
+        const targetVol = currentVolumeRef.current > 0 ? currentVolumeRef.current : 40;
 
         playerRef.current = new window.YT.Player('yt-bg-audio-slot', {
-          height: '180',
-          width: '320',
+          height: '200',
+          width: '200',
           videoId: videoId,
           playerVars: {
-            autoplay: 1, // Autoplay requested
-            mute: 1,     // Muted initial start guarantees 100% browser autoplay acceptance
+            autoplay: 0, // CRITICAL: Do NOT autoplay on page load before user click!
+            mute: 0,
             controls: 0,
             disablekb: 1,
             fs: 0,
@@ -224,42 +271,51 @@ export const BackgroundMusicPlayer: React.FC = () => {
           events: {
             onReady: (event: any) => {
               if (isCancelled) return;
-
-              // Expose for inspection/debugging
+              playerRef.current = event.target;
               (window as any).__bgPlayer = event.target;
 
               // Ensure iframe attributes
               const iframe = containerRef.current?.querySelector('iframe');
               if (iframe) {
                 iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+                iframe.style.width = '200px';
+                iframe.style.height = '200px';
               }
 
-              // Seek to start position if defined
+              // Seek to start position
               if (backgroundMusic.startPoint && backgroundMusic.startPoint > 0) {
-                event.target.seekTo(backgroundMusic.startPoint, true);
+                try {
+                  event.target.seekTo(backgroundMusic.startPoint, true);
+                } catch {}
+              } else {
+                try {
+                  event.target.seekTo(0, true);
+                } catch {}
               }
 
-              // Always start video stream immediately (guaranteed by mute: 1)
-              event.target.playVideo();
-              setIsPlaying(true);
-
-              // Immediately try to unmute with target volume
+              // Configure volume
               try {
                 event.target.setVolume(targetVol);
-                event.target.unMute();
+              } catch {}
 
-                // Check if browser permitted unmuting right away
-                const isCurrentlyMuted = typeof event.target.isMuted === 'function' ? event.target.isMuted() : false;
-                if (!isCurrentlyMuted) {
+              // If user has ALREADY clicked while player was loading, start now!
+              const alreadyClicked = Boolean((window as any).__al1UserInteracted || hasUserInteractedRef.current);
+              if (alreadyClicked && !isUserExplicitlyPausedRef.current) {
+                try {
+                  event.target.unMute();
+                  event.target.playVideo();
+                  setIsPlaying(true);
                   setIsMuted(false);
                   setNeedsInteraction(false);
-                } else {
-                  setIsMuted(true);
-                  setNeedsInteraction(true);
-                }
-              } catch {
-                setIsMuted(true);
-                setNeedsInteraction(true);
+                } catch {}
+              } else {
+                // Otherwise, keep PAUSED and wait for user click!
+                try {
+                  event.target.pauseVideo();
+                } catch {}
+                setIsPlaying(false);
+                setIsMuted(false);
+                setNeedsInteraction(false);
               }
             },
             onStateChange: (event: any) => {
@@ -267,9 +323,12 @@ export const BackgroundMusicPlayer: React.FC = () => {
               // 1 = PLAYING
               if (event.data === 1) {
                 setIsPlaying(true);
-                if (typeof event.target.isMuted === 'function' && !event.target.isMuted()) {
-                  setIsMuted(false);
-                  setNeedsInteraction(false);
+                if (!isUserExplicitlyMutedRef.current) {
+                  try {
+                    event.target.unMute();
+                    setIsMuted(false);
+                    setNeedsInteraction(false);
+                  } catch {}
                 }
               }
               // 2 = PAUSED
@@ -279,8 +338,10 @@ export const BackgroundMusicPlayer: React.FC = () => {
               // 0 = ENDED
               else if (event.data === 0) {
                 if (backgroundMusic.repeat) {
-                  event.target.seekTo(backgroundMusic.startPoint || 0, true);
-                  event.target.playVideo();
+                  try {
+                    event.target.seekTo(backgroundMusic.startPoint || 0, true);
+                    event.target.playVideo();
+                  } catch {}
                 } else {
                   setIsPlaying(false);
                 }
@@ -331,13 +392,19 @@ export const BackgroundMusicPlayer: React.FC = () => {
 
   // Interactive controls
   const handleTogglePlay = () => {
-    if (!playerRef.current) return;
+    if (!playerRef.current) {
+      unlockAudio();
+      return;
+    }
     try {
       if (isPlaying) {
+        isUserExplicitlyPausedRef.current = true;
         playerRef.current.pauseVideo();
         setIsPlaying(false);
         wasPlayingBeforeVideoRef.current = false;
       } else {
+        isUserExplicitlyPausedRef.current = false;
+        isUserExplicitlyMutedRef.current = false;
         wasPlayingBeforeVideoRef.current = true;
         unlockAudio();
       }
@@ -350,8 +417,10 @@ export const BackgroundMusicPlayer: React.FC = () => {
     if (!playerRef.current) return;
     try {
       if (isMuted) {
+        isUserExplicitlyMutedRef.current = false;
         unlockAudio();
       } else {
+        isUserExplicitlyMutedRef.current = true;
         playerRef.current.mute();
         setIsMuted(true);
       }
@@ -361,10 +430,12 @@ export const BackgroundMusicPlayer: React.FC = () => {
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = Number(e.target.value);
     setCurrentVolume(val);
+    currentVolumeRef.current = val;
     if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
       try {
         playerRef.current.setVolume(val);
         if (val > 0 && isMuted) {
+          isUserExplicitlyMutedRef.current = false;
           playerRef.current.unMute();
           setIsMuted(false);
           setNeedsInteraction(false);
@@ -380,12 +451,13 @@ export const BackgroundMusicPlayer: React.FC = () => {
   return (
     <>
       {/* 
-        In-viewport container (320x180px, opacity 0.01, z-[-1]):
-        This prevents browser power-saving or media-throttling from pausing audio!
+        In-viewport, non-occluded audio frame container:
+        Keeps opacity ~1.0 and z-10 inside a tiny 10px box so Chrome/Edge never suspends it!
       */}
       <div
         ref={containerRef}
-        className="fixed bottom-0 right-0 w-[320px] h-[180px] opacity-[0.01] pointer-events-none z-[-1] overflow-hidden"
+        className="fixed bottom-0 right-0 w-2.5 h-2.5 overflow-hidden pointer-events-none z-10"
+        style={{ opacity: 0.99 }}
         aria-hidden="true"
       />
 
@@ -404,12 +476,14 @@ export const BackgroundMusicPlayer: React.FC = () => {
             className="group relative p-3 rounded-full bg-neutral-950/90 hover:bg-neutral-900 border border-purple-500/40 hover:border-purple-400 text-white shadow-2xl backdrop-blur-xl flex items-center justify-center transition-all hover:scale-110 cursor-pointer"
             title="Expand Background Music Player"
           >
-            {isPlaying && !isVideoPlaying ? (
+            {isPlaying && !isVideoPlaying && !isMuted ? (
               <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
+            ) : isMuted ? (
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 animate-pulse" />
             ) : isVideoPlaying ? (
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
             ) : null}
-            <Music className={`w-4 h-4 ${isPlaying && !isMuted && !isVideoPlaying ? 'text-emerald-400' : isVideoPlaying ? 'text-cyan-400' : 'text-purple-400'}`} />
+            <Music className={`w-4 h-4 ${isPlaying && !isMuted && !isVideoPlaying ? 'text-emerald-400' : isMuted ? 'text-amber-400' : isVideoPlaying ? 'text-cyan-400' : 'text-purple-400'}`} />
           </button>
         ) : (
           /* Full Compact Bar */
@@ -422,13 +496,15 @@ export const BackgroundMusicPlayer: React.FC = () => {
                   ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-400'
                   : isVideoPlaying
                   ? 'bg-cyan-600/80 text-white shadow-lg shadow-cyan-600/30 hover:bg-cyan-500'
-                  : 'bg-purple-600 text-white shadow-lg shadow-purple-600/40 hover:bg-purple-500'
+                  : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-600/40 hover:brightness-110'
               }`}
               title={
                 isPlaying && !isMuted && !isVideoPlaying
                   ? 'Pause Background Music'
                   : isVideoPlaying
                   ? 'Resume Background Music'
+                  : isMuted
+                  ? 'Click to Unmute Audio'
                   : 'Play Background Music'
               }
             >
@@ -485,15 +561,22 @@ export const BackgroundMusicPlayer: React.FC = () => {
                 ) : isPlaying && !isMuted ? (
                   <span className="text-emerald-400 font-medium flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
-                    Auto Playing Live
+                    Playing Live
                   </span>
-                ) : needsInteraction || isMuted ? (
-                  <span className="text-amber-300 font-medium flex items-center gap-1 cursor-pointer" onClick={unlockAudio}>
+                ) : isMuted || needsInteraction ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      unlockAudio();
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[9px] font-semibold transition-all hover:scale-105 cursor-pointer shadow-sm animate-pulse"
+                    title="Click to enable and unmute background sound"
+                  >
                     <VolumeX className="w-2.5 h-2.5 text-amber-300" />
-                    <span>Sound Ready • Tap anywhere</span>
-                  </span>
+                    <span>Click to Unmute 🔊</span>
+                  </button>
                 ) : (
-                  <span>Paused</span>
+                  <span>Ready to Play</span>
                 )}
                 <span className="text-neutral-600">•</span>
                 <a

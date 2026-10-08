@@ -11,9 +11,13 @@ import {
   Sparkles,
   HelpCircle,
   CheckCircle2,
+  Scale,
+  Lock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../context/PortfolioContext';
+import { LegalModal, type LegalTab } from './LegalModal';
+
 import {
   type PolicyRule,
   type PinColor,
@@ -36,6 +40,13 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
   const { policyRules, policyNotice, isAdmin, pauseBackgroundMusic, resumeBackgroundMusic } = usePortfolio();
   const [activeDetailRule, setActiveDetailRule] = useState<PolicyRule | null>(null);
   const [videoModalUrl, setVideoModalUrl] = useState<string | null>(null);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalTab, setLegalTab] = useState<LegalTab>('terms');
+
+  const openLegalModal = (tab: LegalTab) => {
+    setLegalTab(tab);
+    setLegalModalOpen(true);
+  };
 
   // Pause background music while reference videos are active, resume on close
   const isAnyPolicyVideoActive = Boolean(
@@ -153,6 +164,28 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
         <p className="text-xs sm:text-sm text-neutral-400 mt-2.5 max-w-xl mx-auto leading-relaxed">
           হালাল উপার্জনের লক্ষ্যে ও ইসলামিক অনুশাসন মেনে প্রতিটি ভিডিও সম্পাদনা করা হয়। বিস্তারিত হাদিস ও দিকনির্দেশনা জানতে যেকোনো নীতিমালায় ক্লিক করুন।
         </p>
+
+        {/* Quick Launchers for Official Brand Terms & Privacy Policy */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => openLegalModal('terms')}
+            className="px-4 py-2 rounded-xl glass-panel border border-amber-400/40 bg-amber-400/10 hover:bg-amber-400/20 text-amber-300 hover:text-amber-200 text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md hover:scale-105 active:scale-95"
+            title="Open AL1 Official Brand Terms of Service"
+          >
+            <Scale className="w-4 h-4 text-amber-400" />
+            <span>Official Brand Terms (আইনগত নীতিমালা)</span>
+          </button>
+
+          <button
+            onClick={() => openLegalModal('privacy')}
+            className="px-4 py-2 rounded-xl glass-panel border border-cyan-400/40 bg-cyan-400/10 hover:bg-cyan-400/20 text-cyan-300 hover:text-cyan-200 text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md hover:scale-105 active:scale-95"
+            title="Open AL1 Official Privacy Policy"
+          >
+            <Lock className="w-4 h-4 text-cyan-400" />
+            <span>Privacy Policy (গোপনীয়তা রক্ষা)</span>
+          </button>
+        </div>
+
 
         {isAdmin && onOpenAdmin && (
           <button
@@ -569,6 +602,14 @@ export const TermsPolicySection: React.FC<TermsPolicySectionProps> = ({ onOpenAd
           </div>
         )}
       </AnimatePresence>
+
+      {/* Official AL1 Brand & Legal Terms Modal */}
+      <LegalModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        initialTab={legalTab}
+      />
     </section>
+
   );
 };

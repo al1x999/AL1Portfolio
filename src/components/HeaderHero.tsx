@@ -52,26 +52,8 @@ export const HeaderHero: React.FC<HeaderHeroProps> = () => {
 
   return (
     <section id="home" className="relative pt-24 sm:pt-28 pb-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto z-20">
-      {/* Availability Status Badge */}
-      <div className="flex justify-center mb-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel border border-white/10 text-xs text-neutral-300 shadow-md">
-          <span className="relative flex h-2 w-2">
-            <span
-              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-              style={{ backgroundColor: 'var(--accent)' }}
-            />
-            <span
-              className="relative inline-flex rounded-full h-2 w-2"
-              style={{ backgroundColor: 'var(--accent)' }}
-            />
-          </span>
-          <span className="font-medium text-xs text-neutral-200">
-            {brand.statusText}
-          </span>
-        </div>
-      </div>
-
       {/* Main Hero & Brand Identity */}
+
       <div className="flex flex-col items-center text-center">
         {/* Animated Brand Logo Container (Slightly Zoomed to fill organically) */}
         <motion.div
@@ -87,9 +69,9 @@ export const HeaderHero: React.FC<HeaderHeroProps> = () => {
           title="Explore Portfolio"
         >
           <img
-            src="/logo.png"
+            src="/al1-logo.png"
             alt="AL1 Studio Logo"
-            className="w-full h-full object-cover scale-125 transition-transform duration-300 group-hover:scale-135"
+            className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-110"
           />
           <div
             className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-black animate-pulse"

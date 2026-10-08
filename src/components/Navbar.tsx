@@ -103,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin }) => {
                 boxShadow: '0 0 15px var(--accent-glow)',
               }}
             >
-              <img src="/logo.png" alt="AL1 Studio" className="w-full h-full object-cover scale-125" />
+              <img src="/al1-logo.png" alt="AL1 Studio" className="w-full h-full object-contain p-0.5" />
             </div>
             <div className="flex items-center gap-1.5">
               <span className="font-heading font-extrabold text-sm sm:text-base text-white tracking-tight">

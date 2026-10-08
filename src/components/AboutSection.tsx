@@ -18,6 +18,7 @@ import {
 import { motion } from 'framer-motion';
 import { usePortfolio } from '../context/PortfolioContext';
 import type { HubLink, LinkIconType } from '../types/portfolio';
+import { sanitizeUrl } from '../utils/security';
 
 interface AboutSectionProps {
   onOpenAdmin?: () => void;
@@ -341,9 +342,9 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ onOpenAdmin }) => {
                 {/* Bottom Action Buttons: Open Link + Copy Link */}
                 <div className="relative z-10 mt-4 pt-3 border-t border-white/5 flex items-center justify-between gap-2">
                   <a
-                    href={link.url}
+                    href={sanitizeUrl(link.url)}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-white hover:underline transition-all"
                     style={{ color: accent }}
                   >

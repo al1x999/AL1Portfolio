@@ -8,6 +8,7 @@ import type {
   ThemeConfig,
   PolicyRule,
   BackgroundMusicConfig,
+  IntroScreenConfig,
 } from '../types/portfolio';
 
 export const INITIAL_BRAND: BrandInfo = {
@@ -259,6 +260,16 @@ export const INITIAL_BACKGROUND_MUSIC: BackgroundMusicConfig = {
   endPoint: 0,
   repeat: true,
   autoPlay: true,
+};
+
+export const INITIAL_INTRO_CONFIG: IntroScreenConfig = {
+  enabled: true,
+  title: 'AL1',
+  tagline: '',
+  buttonText: 'CLICK ANYWHERE',
+  showAudioBadge: false,
+  subtext: '',
+  themeAura: 'dual',
 };
 
 export const INITIAL_REVIEWS: ClientReview[] = [

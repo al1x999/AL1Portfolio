@@ -13,11 +13,20 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 import { VideoModal } from './components/VideoModal';
 import { AdminModal } from './components/admin/AdminModal';
 import { BackgroundMusicPlayer } from './components/BackgroundMusicPlayer';
+import { IntroScreen } from './components/IntroScreen';
 import { Shield, LogOut } from 'lucide-react';
+import { useAssetProtection } from './utils/useAssetProtection';
 
 const PortfolioContent: React.FC = () => {
-  const { activeVideo, closeVideoModal, isAdmin, logoutAdmin } = usePortfolio();
+  const { activeVideo, closeVideoModal, isAdmin, logoutAdmin, startBackgroundMusic, introConfig } = usePortfolio();
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
+  const { toastMessage } = useAssetProtection();
+
+  const handleEnterSite = () => {
+    startBackgroundMusic();
+    setShowIntro(false);
+  };
 
   // Secret Admin Activation Listeners
   useEffect(() => {
@@ -44,6 +53,9 @@ const PortfolioContent: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-cyber-grid text-neutral-100 selection:bg-cyan-500 selection:text-black">
+      {/* Cinematic Intro Screen with AL1 Logo & Interactive Gesture */}
+      {showIntro && introConfig.enabled && <IntroScreen onEnter={handleEnterSite} />}
+
       {/* Dynamic Background Particle/Ambient Canvas */}
       <InteractiveBackground />
 
@@ -107,9 +119,18 @@ const PortfolioContent: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Asset Protection Discrete Security Toast */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded-xl bg-neutral-900/95 border border-cyan-500/40 text-xs text-neutral-200 shadow-2xl backdrop-blur-md flex items-center gap-2 animate-fade-in pointer-events-none">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 };
+
 
 export default function App() {
   return (

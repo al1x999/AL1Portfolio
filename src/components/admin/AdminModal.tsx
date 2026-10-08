@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { usePortfolio } from '../../context/PortfolioContext';
 import { generateInitialDataTs } from '../../services/cloudSync';
+import { adminBruteForce } from '../../utils/security';
 import type {
   VideoProject,
   HubLink,
@@ -55,6 +56,7 @@ import type {
   PolicyRule,
   PinColor,
   BackgroundMusicConfig,
+  IntroScreenConfig,
 } from '../../types/portfolio';
 import { getPolicyHadiths, getPolicyYouTubeUrls } from '../../types/portfolio';
 
@@ -205,7 +207,7 @@ interface AdminModalProps {
   onClose: () => void;
 }
 
-type AdminTab = 'videos' | 'policy' | 'music' | 'categories' | 'links' | 'reviews' | 'skills' | 'settings';
+type AdminTab = 'videos' | 'intro' | 'music' | 'policy' | 'categories' | 'links' | 'reviews' | 'skills' | 'settings';
 
 export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
   const {
@@ -249,6 +251,8 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
     updateTheme,
     backgroundMusic,
     updateBackgroundMusic,
+    introConfig,
+    updateIntroConfig,
     isAdmin,
     loginAdmin,
     logoutAdmin,
@@ -266,6 +270,31 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
   } = usePortfolio();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('videos');
+
+  // Intro Screen state
+  const [introForm, setIntroForm] = useState<IntroScreenConfig>(() => ({ ...introConfig }));
+  const [introSaved, setIntroSaved] = useState(false);
+
+  useEffect(() => {
+    if (introConfig) {
+      setIntroForm({ ...introConfig });
+    }
+  }, [introConfig]);
+
+  const handleSaveIntro = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateIntroConfig({
+      enabled: Boolean(introForm.enabled),
+      title: introForm.title.trim() || 'AL1',
+      tagline: introForm.tagline.trim(),
+      buttonText: introForm.buttonText.trim() || 'CLICK HERE',
+      showAudioBadge: Boolean(introForm.showAudioBadge),
+      subtext: introForm.subtext.trim() || 'Click anywhere to enter',
+      themeAura: introForm.themeAura || 'dual',
+    });
+    setIntroSaved(true);
+    setTimeout(() => setIntroSaved(false), 3000);
+  };
 
   // Background Music state
   const [musicForm, setMusicForm] = useState<BackgroundMusicConfig>(() => ({ ...backgroundMusic }));
@@ -452,16 +481,30 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // Login handler
+  // Login handler with brute-force defense
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const lockoutStatus = adminBruteForce.isLockedOut();
+    if (lockoutStatus.locked) {
+      setLoginError(`Security Lockout: Too many failed attempts. Please wait ${lockoutStatus.remainingSeconds}s.`);
+      return;
+    }
+
     if (loginAdmin(passInput)) {
+      adminBruteForce.recordSuccess();
       setLoginError('');
       setPassInput('');
     } else {
-      setLoginError('Incorrect password. Default PIN is: admin123');
+      const failResult = adminBruteForce.recordFailure();
+      if (failResult.locked) {
+        setLoginError(`Security Lockout: 5 failed attempts reached. Locked out for ${failResult.lockoutSeconds} seconds.`);
+      } else {
+        setLoginError(`Incorrect password. ${failResult.remainingAttempts} attempt(s) remaining before temporary lockout.`);
+      }
     }
   };
+
 
   // Password change handler
   const handleChangePassword = (e: React.FormEvent) => {
@@ -1129,6 +1172,27 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
               </button>
 
               <button
+                onClick={() => setActiveTab('intro')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
+                  activeTab === 'intro'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm'
+                    : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Intro Screen</span>
+                {introForm.enabled ? (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-500/20 text-cyan-400 font-mono">
+                    On
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 font-mono text-neutral-400">
+                    Off
+                  </span>
+                )}
+              </button>
+
+              <button
                 onClick={() => setActiveTab('policy')}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all whitespace-nowrap ${
                   activeTab === 'policy'
@@ -1630,6 +1694,241 @@ export const AdminModal: React.FC<AdminModalProps> = ({ isOpen, onClose }) => {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* TAB: INTRO SCREEN (আধুনিক লোগো ও মিউজিক এন্টার স্ক্রিন) */}
+              {activeTab === 'intro' && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/10">
+                    <div>
+                      <h3 className="font-heading font-bold text-lg text-white flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-cyan-400" />
+                        <span>Intro Screen & Minimal Pixel Reveal (মিনিমাল পিক্সেল রিভিল এন্ট্রি)</span>
+                      </h3>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        সম্পূর্ণ মিনিমাল ব্ল্যাক ব্যাকগ্রাউন্ডে ট্রান্সপারেন্ট AL1 লোগো প্রদর্শিত হবে (কোনো রেক্টেঙ্গুলার বক্স ছাড়া)। যেকোনো জায়গায় ক্লিক করলেই চমৎকার পিক্সেল ডিসলভ/রিভিল অ্যানিমেশনের মাধ্যমে মিউজিক সহ মূল সাইট ওপেন হবে।
+                      </p>
+                    </div>
+
+                    {introSaved && (
+                      <span className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1.5 self-start sm:self-auto animate-fade-in">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>সেটিংস সংরক্ষিত হয়েছে!</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Live Visual Preview Card (Minimal, borderless, sleek) */}
+                  <div className="p-8 rounded-2xl glass-card border border-white/10 bg-black flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div className="absolute top-3 left-4 flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          introForm.enabled ? 'bg-cyan-400 animate-ping' : 'bg-neutral-600'
+                        }`}
+                      />
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-400">
+                        Status: {introForm.enabled ? 'Enabled (Active)' : 'Disabled'}
+                      </span>
+                    </div>
+
+                    {/* Preview Borderless Logo with Ambient Glow */}
+                    <div className="relative w-32 h-32 flex items-center justify-center my-2">
+                      <div
+                        className="absolute inset-0 rounded-full blur-2xl opacity-50"
+                        style={{
+                          background:
+                            introForm.themeAura === 'dual'
+                              ? 'radial-gradient(circle, rgba(239,68,68,0.4) 0%, rgba(0,240,255,0.4) 60%, transparent 75%)'
+                              : introForm.themeAura === 'cyan'
+                              ? 'radial-gradient(circle, rgba(0,240,255,0.5) 0%, transparent 75%)'
+                              : introForm.themeAura === 'red'
+                              ? 'radial-gradient(circle, rgba(239,68,68,0.5) 0%, transparent 75%)'
+                              : introForm.themeAura === 'purple'
+                              ? 'radial-gradient(circle, rgba(168,85,247,0.5) 0%, transparent 75%)'
+                              : 'radial-gradient(circle, rgba(16,185,129,0.5) 0%, transparent 75%)',
+                        }}
+                      />
+                      <img src="/al1-logo.png" alt="AL1 Logo Preview" className="w-28 h-28 object-contain drop-shadow-lg relative z-10" />
+                    </div>
+
+                    {/* Minimal CLICK HERE prompt preview */}
+                    <div className="mt-4 flex flex-col items-center gap-1.5">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-white">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                        <span className="font-heading font-extrabold text-xs tracking-[0.25em] uppercase text-white">
+                          {introForm.buttonText || 'CLICK HERE'}
+                        </span>
+                        <span className="text-cyan-400 font-mono text-xs">›</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-neutral-500">
+                        {introForm.subtext || 'Click anywhere to enter'} • Pixel Wave Reveal
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Settings Form */}
+                  <form onSubmit={handleSaveIntro} className="p-5 rounded-2xl glass-card border border-white/15 space-y-5">
+                    {/* Enable Toggle Switch */}
+                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/5 border border-white/10">
+                      <div>
+                        <label className="text-sm font-bold text-white block">
+                          ইন্ট্রো স্ক্রিন চালু রাখুন (Enable Intro Screen)
+                        </label>
+                        <p className="text-xs text-neutral-400">
+                          অন রাখলে সাইট লোড হলে ফুলস্ক্রিন সিনেমাটিক লোগো ও এন্টার বাটন আসবে। ভিজিটর ক্লিক করলেই মিউজিক শুরু হবে।
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={introForm.enabled}
+                          onChange={(e) => setIntroForm({ ...introForm, enabled: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                      </label>
+                    </div>
+
+                    {/* Title & Tagline */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                          Main Studio Title (প্রধান শিরোনাম)
+                        </label>
+                        <input
+                          type="text"
+                          value={introForm.title}
+                          onChange={(e) => setIntroForm({ ...introForm, title: e.target.value })}
+                          placeholder="e.g. AL1 STUDIO"
+                          className="w-full px-4 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                          Tagline / Subtitle (ট্যাগলাইন বা সাবটাইটেল)
+                        </label>
+                        <input
+                          type="text"
+                          value={introForm.tagline}
+                          onChange={(e) => setIntroForm({ ...introForm, tagline: e.target.value })}
+                          placeholder="e.g. CINEMATIC VIDEO EDITING & POST-PRODUCTION"
+                          className="w-full px-4 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Button Text & Subtext */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                          Enter Button Label (বাটনের লেখা)
+                        </label>
+                        <input
+                          type="text"
+                          value={introForm.buttonText}
+                          onChange={(e) => setIntroForm({ ...introForm, buttonText: e.target.value })}
+                          placeholder="e.g. CLICK HERE"
+                          className="w-full px-4 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-semibold text-neutral-300 block mb-1.5">
+                          Subtext / Shortcut Hint (নিচের নির্দেশিকা)
+                        </label>
+                        <input
+                          type="text"
+                          value={introForm.subtext}
+                          onChange={(e) => setIntroForm({ ...introForm, subtext: e.target.value })}
+                          placeholder="e.g. Click anywhere to enter"
+                          className="w-full px-4 py-2.5 rounded-xl glass-panel border border-white/15 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-cyan-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Audio Hint Badge Toggle */}
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                      <div>
+                        <label className="text-xs font-bold text-white block">
+                          অডিও নোটিশ প্রদর্শন করুন (Show Audio Auto-Start Badge)
+                        </label>
+                        <p className="text-[11px] text-neutral-400">
+                          ভিজিটরদের জানাবে যে প্রবেশের পর অটোমেটিক আবহ সংগীত বা মিউজিক শুরু হবে।
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={introForm.showAudioBadge}
+                          onChange={(e) => setIntroForm({ ...introForm, showAudioBadge: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                      </label>
+                    </div>
+
+                    {/* Aura Glow Theme Selector */}
+                    <div>
+                      <label className="text-xs font-semibold text-neutral-300 block mb-2">
+                        Aura & Neon Glow Effect (আভা ও এনার্জি রিং কালার)
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        {[
+                          { id: 'dual', label: 'Dual Neon (Red + Cyan)', desc: 'AL1 Signature', color: 'from-red-500 to-cyan-500' },
+                          { id: 'cyan', label: 'Neon Cyan', desc: 'Electric Blue', color: 'from-cyan-400 to-blue-500' },
+                          { id: 'red', label: 'Crimson Fire', desc: 'Blood Orange', color: 'from-rose-500 to-amber-500' },
+                          { id: 'purple', label: 'Cyber Violet', desc: 'Synthwave', color: 'from-purple-500 to-pink-500' },
+                          { id: 'emerald', label: 'Cyber Emerald', desc: 'Matrix Green', color: 'from-emerald-400 to-teal-500' },
+                        ].map((auraItem) => (
+                          <button
+                            key={auraItem.id}
+                            type="button"
+                            onClick={() => setIntroForm({ ...introForm, themeAura: auraItem.id as any })}
+                            className={`p-3 rounded-xl border text-left flex flex-col gap-1.5 transition-all ${
+                              introForm.themeAura === auraItem.id
+                                ? 'border-cyan-400 bg-cyan-500/10 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-400'
+                                : 'border-white/10 glass-panel hover:border-white/20'
+                            }`}
+                          >
+                            <div className={`w-full h-2 rounded-full bg-gradient-to-r ${auraItem.color}`} />
+                            <span className="font-semibold text-xs text-white">{auraItem.label}</span>
+                            <span className="text-[10px] text-neutral-400">{auraItem.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIntroForm({
+                            enabled: true,
+                            title: 'AL1',
+                            tagline: '',
+                            buttonText: 'CLICK HERE',
+                            showAudioBadge: true,
+                            subtext: 'Click anywhere to enter',
+                            themeAura: 'dual',
+                          });
+                        }}
+                        className="px-3 py-1.5 rounded-xl glass-panel border border-white/10 text-xs text-neutral-400 hover:text-white transition-all cursor-pointer"
+                      >
+                        Reset to Defaults
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-cyan-500/30 transition-all cursor-pointer"
+                      >
+                        <Check className="w-4 h-4" />
+                        <span>Save & Sync Intro Settings</span>
+                      </button>
+                    </div>
+                  </form>
                 </div>
               )}
 

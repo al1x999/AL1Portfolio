@@ -146,3 +146,13 @@ export interface BackgroundMusicConfig {
   autoPlay: boolean;
 }
 
+export interface IntroScreenConfig {
+  enabled: boolean;
+  title: string;
+  tagline: string;
+  buttonText: string;
+  showAudioBadge: boolean;
+  subtext: string;
+  themeAura: 'dual' | 'cyan' | 'red' | 'purple' | 'emerald';
+}
+

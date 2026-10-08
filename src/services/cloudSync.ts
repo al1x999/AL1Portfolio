@@ -8,6 +8,7 @@ import type {
   PolicyRule,
   ThemeConfig,
   BackgroundMusicConfig,
+  IntroScreenConfig,
 } from '../types/portfolio';
 
 export interface FullPortfolioData {
@@ -21,6 +22,7 @@ export interface FullPortfolioData {
   policyNotice: string;
   theme: ThemeConfig;
   backgroundMusic?: BackgroundMusicConfig;
+  introConfig?: IntroScreenConfig;
   updatedAt?: string;
 }
 

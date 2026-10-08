@@ -156,3 +156,13 @@ h1, h2, h3, .font-heading {
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
 }
+
+/* Media & Asset Protection against casual drag-and-drop theft */
+img, video {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+}
+
